@@ -49,7 +49,7 @@ def matlab_datenum_to_datetime64(tnums: np.ndarray) -> np.ndarray:
     return np.datetime64("1970-01-01T00:00:00") + ns_since_unix.astype("timedelta64[ns]")
 
 
-def load_pressure_bursts(
+def loadPressureData(
     mat_path: Path,
     *,
     sample_rate_hz: float = 1.0,
