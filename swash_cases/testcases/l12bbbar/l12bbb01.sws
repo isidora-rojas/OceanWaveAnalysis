@@ -1,0 +1,59 @@
+$*************HEADING***********************************
+$
+PROJ 'L12bbb01' 'L12'
+$
+$  Beji and Battjes (1993), case A: wave propagation test
+$
+$ --|--------------------------------------------------------------|--
+$   | This SWASH input file is part of the bench mark tests for    |
+$   | SWASH. More information about this test can be found in      |
+$   | an accompanied document.                                     |
+$ --|--------------------------------------------------------------|--
+$
+$***********MODEL INPUT*********************************
+$
+MODE DYN ONED
+$
+CGRID 0. 0. 0. 30. 0. 1200 0
+$
+VERT 2
+$
+INPGRID BOTTOM 0. 0. 0. 30 0 1. 1.
+READINP BOTTOM 1. 'l12bbbar.bot' 1 1 FREE
+$
+INIT zero
+$
+BOU SIDE W CCW BTYPE VEL  SMOO 2.02 SEC CON FOUR 0. 0.0495 3.1105 90.
+BOU SIDE E CCW BTYPE WLEV               CON 0.
+$
+FRIC CONSTANT 0.
+VISC 0.
+NONHYDrostatic
+$
+DISCRET UPW  FROMM
+DISCRET UPW   UMOM V NONE
+DISCRET CORR FIRST
+$
+$************ OUTPUT REQUESTS *************************
+$
+POINTS 'stat4' 10.5 0.
+POINTS 'stat5' 12.5 0.
+POINTS 'stat6' 13.5 0.
+POINTS 'stat7' 14.5 0.
+POINTS 'stat8' 15.7 0.
+POINTS 'stat9' 17.3 0.
+POINTS 'stat10' 19.0 0.
+POINTS 'stat11' 21.0 0.
+$
+TABLE  'stat4' NOHEAD 'station4.tbl' TSEC WATL OUTPUT 000000.000 0.01 SEC
+TABLE  'stat5' NOHEAD 'station5.tbl' TSEC WATL OUTPUT 000000.000 0.01 SEC
+TABLE  'stat6' NOHEAD 'station6.tbl' TSEC WATL OUTPUT 000000.000 0.01 SEC
+TABLE  'stat7' NOHEAD 'station7.tbl' TSEC WATL OUTPUT 000000.000 0.01 SEC
+TABLE  'stat8' NOHEAD 'station8.tbl' TSEC WATL OUTPUT 000000.000 0.01 SEC
+TABLE  'stat9' NOHEAD 'station9.tbl' TSEC WATL OUTPUT 000000.000 0.01 SEC
+TABLE  'stat10' NOHEAD 'station10.tbl' TSEC WATL OUTPUT 000000.000 0.01 SEC
+TABLE  'stat11' NOHEAD 'station11.tbl' TSEC WATL OUTPUT 000000.000 0.01 SEC
+$
+TEST 1,0
+COMPUTE 000000.000 0.1 SEC 000040.000
+STOP

@@ -1,0 +1,49 @@
+$*************HEADING****************************************
+$
+PROJ 'L31set03' 'L31'
+$
+$ Wave experiment by Boers (1996), case 1C: wave breaking test
+$
+$ --|--------------------------------------------------------------|--
+$   | This SWASH input file is part of the bench mark tests for    |
+$   | SWASH. More information about this test can be found in      |
+$   | an accompanied document.                                     |
+$ --|--------------------------------------------------------------|--
+$
+$***********MODEL INPUT**********************************
+$
+MODE DYN ONED
+$
+CGRID 0. 0. 0. 32. 0. 1600 0
+$
+INPGRID BOTTOM 0. 0. 0. 320 0 0.1 0.
+READINP BOTTOM 1. 'l31setu.bot' 1 0 FREE
+$
+INIT zero
+$
+BOU SIDE W CCW BTYPE WEAK CON SERIES 'l31set03.bnd'
+BOU SIDE E CCW BTYPE RADIATION
+$
+FRIC MANNING 0.027
+BREAK
+NONHYDROSTATIC
+$
+DISCRET UPW MOM
+$
+TIMEI 0.1 0.5
+$
+$************ OUTPUT REQUESTS *************************
+$
+QUANT XP HEXP 10.
+QUANT HS SETUP DUR 15 MIN
+$
+$POINTS 'GAUGE' FILE 'l31setu.loc'
+$TABLE  'GAUGE' HEAD 'l31set03.tbl' TSEC XP BOTL WATL VMAG OUTPUT 000000.000 0.25 SEC
+$
+FRAME 'GRID'   0. 0. 0. 32. 0. 64 0
+BLOCK 'GRID'   NOHEAD 'l31set03.mat' LAY 3 XP BOTL WATL OUTPUT 000000.000 0.05 SEC
+TABLE 'GRID'   HEAD   'l31set03.tab' XP HS SETUP
+$
+TEST 1 0
+COMPUTE 000000.000 0.001 SEC 002800.000
+STOP

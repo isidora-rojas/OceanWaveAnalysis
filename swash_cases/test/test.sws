@@ -1,0 +1,32 @@
+Project 'Mono 1D minimal'
+Mode nonhydrostatic
+Coordinates x
+
+# Grid: define by Xmin/Xmax/Dx (do NOT give Nx here)
+Xmin 0.0
+Xmax 200.0
+Dx   1.0
+
+# Vertical layers
+Nz 1
+
+# Bottom: -5 m at x=0 to 0 m at x=200
+Bedlevel linear 0.0 200.0 -5.0 0.0
+
+# Time stepping
+Time 60.0
+Dt   0.05
+
+# Offshore boundary: true monochromatic (use Height/Period only)
+Boundary 'west'
+   Type monochromatic
+   Height 1.0
+   Period 8.0
+End
+
+# Minimal output (line of eta) so we’re sure it writes something
+Output 'test_output'
+   Surface elevation
+   Line x
+   Period 1.0
+End

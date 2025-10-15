@@ -1,0 +1,46 @@
+$*************HEADING***********************************
+$
+PROJ 'L33tur02' 'L33'
+$
+$  2DV turbulent channel flow (Nezu and Rodi, 1986)
+$
+$  Discharge is 0.075 m2/s and flume length is 20 m
+$  Downstream water depth is 0.10 m
+$  Flume has a hydraulically smooth bed
+$
+$ --|--------------------------------------------------------------|--
+$   | This SWASH input file is part of the bench mark tests for    |
+$   | SWASH. More information about this test can be found in      |
+$   | an accompanied document.                                     |
+$ --|--------------------------------------------------------------|--
+$
+$***********MODEL INPUT*********************************
+$
+MODE DYN ONED
+$
+CGRID 0. 0. 0. 20. 0. 20 0
+$
+VERT 10   20. 20. 15. 12. 10. 8. 6. 4. 3. 2.
+$
+INPGRID BOTTOM 0. 0. 0. 1 0 20. 1.
+READINP BOTTOM 1. 'l33turb.bot' 1 0 FREE
+$
+INIT zero
+$
+BOU SIDE W CCW BTYPE DISCH CON 0.075
+BOU SIDE E CCW BTYPE WLEV  CON 0.
+
+FRIC LOGLAW
+VISC VERT KEPS
+$
+TIMEI METH IMPL
+$
+$************ OUTPUT REQUESTS *************************
+$
+GROUP 'GAUGE' 20 20 1 1
+TABLE 'GAUGE' NOHEAD 'l33tur02.tbl' DEPTH USTAR UFRIC
+TABLE 'GAUGE'   HEAD 'l33tur02.tab' ZK VELK TKE EPS VISC
+$
+TEST 1,0
+COMPUTE 000000.000 0.1 SEC 001000.000
+STOP

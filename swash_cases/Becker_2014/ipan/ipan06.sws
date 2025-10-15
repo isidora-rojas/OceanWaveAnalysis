@@ -1,0 +1,38 @@
+! ---- SWASH v11.01A 1D reef case (steady water level) ----
+PROJECT 'IPAN_1D' '001'
+
+MODE DYNamic ONEDimensional        ! order per v11 syntax
+COORDinates CARTesian
+
+! Computational grid: 0..650 m in x, 1D (ylenc=0), 650 meshes -> 651 points
+CGRID REGular  0.0  0.0  0.0   650.0   0.0   650   0
+
+! Input grid for bottom (must precede READinp BOTTOM)
+! For input grids, use number of points and spacing (mxinp,myinp,dxinp,dyinp)
+INPgrid BOT REG  0.0  0.0  0.0   651   1    1.0   0.0
+READinp  BOT 'ipan_transect.bot'  FREE
+
+! Bottom friction
+FRICtion CHEZY 
+
+
+! Boundary waves (JONSWAP at the WEST side)
+BOUnd SHAPespec JONswap
+BOUndcond SIDE W
+SOURce REGular  1.5  12.0   0.0      ! H[m], T[s], Dir[deg]
+BTYPe SOMMerfeld                     ! radiation-type open boundary at EAST by default
+SPONgelayer E 50                    ! absorbing layer at EAST, width 50 m
+
+! Output: time series at two x-points
+OUTPut TABLE
+  QUANtity WLEV                     ! free-surface elevation
+  LOCations XY
+    277.0   0.0
+    580.0   0.0
+  FName 'gauges.out'
+END
+
+! Run control: start, dt, end
+COMPute 0.0  0.02 SEC  1800.0
+STOP
+

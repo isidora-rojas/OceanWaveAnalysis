@@ -1,0 +1,44 @@
+$*************HEADING***********************************
+$
+PROJ 'T52lok01' 'T52'
+$
+$  Lock exchange test: hydrostatic mode
+$
+$ --|--------------------------------------------------------------|--
+$   | This SWASH input file is part of the bench mark tests for    |
+$   | SWASH. More information about this test can be found in      |
+$   | an accompanied document.                                     |
+$ --|--------------------------------------------------------------|--
+$
+$***********MODEL INPUT*********************************
+$
+MODE DYN ONED
+$
+CGRID 0. 0. 0. 2. 0. 200 0
+$
+VERT 30
+$
+INPGRID BOTTOM 0. 0. 0. 1 0 2. 0.
+READINP BOTTOM 1. 't52lock.bot' 1 0 FREE
+$
+INIT ZERO
+$
+INPTRANS  SALINITY 0. 0. 0. 200 0 0.01 0.
+READTRANS SALINITY 1. 't52lock.sal' 1 0 FREE
+$
+SET BACKVISC 0.0001
+VISC 0.000001
+TRANSPORT 0.0001
+$
+$ Note that energy is conserved
+DISCRET UPW HEAD
+$
+TIMEI METH IMPL
+$
+$************ OUTPUT REQUESTS *************************
+$
+BLOCK 'COMPGRID' NOHEAD 't52lok01.mat' LAY 3 XP ZK SALK
+$
+TEST 1,0
+COMPUTE 000000.000 0.05 SEC 000015.000
+STOP

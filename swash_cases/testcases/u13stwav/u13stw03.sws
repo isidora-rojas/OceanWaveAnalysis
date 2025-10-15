@@ -1,0 +1,40 @@
+$*************HEADING***********************************
+$
+PROJ 'U13stw03' 'U13'
+$
+$  Standing short wave in closed basin (kh = 10pi)
+$
+$ --|--------------------------------------------------------------|--
+$   | This SWASH input file is part of the bench mark tests for    |
+$   | SWASH. More information about this test can be found in      |
+$   | an accompanied document.                                     |
+$ --|--------------------------------------------------------------|--
+$
+$***********MODEL INPUT*********************************
+$
+CGRID UNSTRUCTURED
+$
+VERT 3  5. 25. 70.
+$
+READ UNSTRUCTURED 'u13stwav'
+$
+INPGRID BOTTOM 0. 0. 0. 1 1 20. 5.
+READINP BOTTOM 100. 'u13stwav.bot' 5 0 FREE
+$
+INPGRID WLEV 0. 0. 0. 20 1 1. 5.
+READINP WLEV 1. 'u13stwav.wlv' 5 0 FREE
+$
+NONHYDrostatic BOX
+$
+DISCRET UPW NONE
+DISCRET UPW UMOM V NONE
+DISCRET CORRDEP NONE
+$
+$************ OUTPUT REQUESTS *************************
+$
+POINT 'GAUGE' 17.8 2.5
+TABLE 'GAUGE' NOHEAD 'u13stw03.tbl' TSEC WATL OUTPUT 000000.000 0.01 SEC
+$
+TEST 1,0
+COMPUTE 000000.000 0.01 SEC 000030.000
+STOP

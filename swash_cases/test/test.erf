@@ -1,0 +1,89 @@
+Severe error     : No value for variable NR                                      
+Error            : Illegal keyword: X       
+Error            : Data field skipped:#                                                                                                                                                                                   
+Severe error     : No value for variable XLENC                                   
+Severe error     : No value for variable YLENC                                   
+Error            : Illegal keyword: DEFINE  
+Error            : Illegal keyword: BY      
+Error            : Illegal keyword: XMIN    
+Error            : Illegal keyword: XMAX    
+Error            : Illegal keyword: DX      
+Error            : Illegal keyword: DO      
+Error            : Illegal keyword: NOT     
+Error            : Illegal keyword: GIVE    
+Error            : Illegal keyword: NX      
+Error            : Illegal keyword: HERE    
+Error            : Data field skipped:)                                                                                                                                                                                   
+Error            : Illegal keyword: XMIN    
+Error            : Data field skipped:0.0                                                                                                                                                                                 
+Error            : Illegal keyword: XMAX    
+Error            : Data field skipped:200.0                                                                                                                                                                               
+Error            : Illegal keyword: DX      
+Error            : Data field skipped:1.0                                                                                                                                                                                 
+Error            : Data field skipped:#                                                                                                                                                                                   
+Error            : Illegal keyword: LAYERS  
+Error            : Illegal keyword: NZ      
+Error            : Data field skipped:1                                                                                                                                                                                   
+Error            : Data field skipped:#                                                                                                                                                                                   
+Error            : Illegal keyword: BOTTOM  
+Error            : Data field skipped:-5                                                                                                                                                                                  
+Error            : Illegal keyword: M       
+Error            : Illegal keyword: AT      
+Error            : Illegal keyword: X       
+Error            : Data field skipped:0                                                                                                                                                                                   
+Error            : Illegal keyword: TO      
+Error            : Data field skipped:0                                                                                                                                                                                   
+Error            : Illegal keyword: M       
+Error            : Illegal keyword: AT      
+Error            : Illegal keyword: X       
+Error            : Data field skipped:200                                                                                                                                                                                 
+Error            : Illegal keyword: BEDLEVEL
+Error            : Data field skipped:#                                                                                                                                                                                   
+Error            : Illegal keyword: TIME    
+Error            : Illegal keyword: STEPPING
+Error            : Illegal keyword: TIME    
+Error            : Data field skipped:60.0                                                                                                                                                                                
+Error            : Illegal keyword: DT      
+Error            : Data field skipped:0.05                                                                                                                                                                                
+Error            : Data field skipped:#                                                                                                                                                                                   
+Error            : Illegal keyword: OFFSHORE
+Severe error     : command CGRID must precede this command
+Error            : Illegal keyword: TRUE    
+Error            : Illegal keyword: MONOCHRO
+Error            : Illegal keyword: USE     
+Error            : Illegal keyword: HEIGHT  
+Error            : Illegal keyword: PERIOD  
+Error            : Illegal keyword: ONLY    
+Error            : Data field skipped:)                                                                                                                                                                                   
+Error            : Data field skipped:west                                                                                                                                                                                
+Severe error     : command CGRID must precede this command
+Error            : Illegal keyword: TYPE    
+Error            : Illegal keyword: MONOCHRO
+Error            : Illegal keyword: HEIGHT  
+Error            : Data field skipped:1.0                                                                                                                                                                                 
+Error            : Illegal keyword: PERIOD  
+Error            : Data field skipped:8.0                                                                                                                                                                                 
+Error            : Illegal keyword: END     
+Error            : Data field skipped:#                                                                                                                                                                                   
+Error            : Illegal keyword: MINIMAL 
+Severe error     : No value for variable CENTRE                                  
+Severe error     : No value for variable WIDTH                                   
+Error            : Illegal keyword: OF      
+Error            : Illegal keyword: ETA     
+Error            : Data field skipped:)                                                                                                                                                                                   
+Error            : Illegal keyword: SO      
+Error            : Illegal keyword: WE      
+Error            : Data field skipped:’re                                                                                                                                                                               
+Error            : Illegal keyword: SURE    
+Error            : Illegal keyword: IT      
+Error            : Illegal keyword: WRITES  
+Error            : Illegal keyword: SOMETHIN
+Error            : too long string given for: COMMENT                                 
+Error            : Illegal keyword: SURFACE 
+Error            : Illegal keyword: ELEVATIO
+Severe error     : No value for variable CENTRE                                  
+Severe error     : No value for variable WIDTH                                   
+Error            : Illegal keyword: PERIOD  
+Error            : Data field skipped:1.0                                                                                                                                                                                 
+Error            : Illegal keyword: END     
+Terminating error: unexpected end of command input

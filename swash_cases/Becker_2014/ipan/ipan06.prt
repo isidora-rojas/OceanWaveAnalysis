@@ -1,0 +1,67 @@
+1
+
+                    Execution started at 20251008.101209         
+
+
+
+                    ---------------------------------------
+                                     SWASH
+                         WAVE MOTION IN COASTAL WATERS     
+                             VERSION NUMBER 11.01A              
+                    ---------------------------------------
+
+
+    
+ ! -------------------------------------------------------------
+    
+ ! SWASH: 1D IPAN-like reef with time-varying tide (single run)
+    
+ ! - Reef flat: 0–400 m at 0.5 m depth
+    
+ ! - Reef face: 400–580 m slope 0.06 to ~11.3 m, buffer to 650 m
+    
+ ! Inputs:
+    
+ !   reef_transect.bot         (x depth, depth positive down)
+    
+ !   tide_semidiurnal.wlv      (time[s]  water_level[m])
+    
+ ! -------------------------------------------------------------
+    
+ 
+    
+ PROJECT   'IPAN_1D' '001'
+    
+ TITLE     'Becker(2014): Figure 6'
+ ** Error            : Illegal keyword: TITLE   
+ ** Error            : Data field skipped:Becker(2014): Figure 6                                                                                                                                                              
+    
+ 
+    
+ MODE      ONEDimensional DYNamic
+ ** Error            : Illegal keyword: DYNAMIC 
+    
+ COORDINATES CARTESIAN
+    
+ 
+    
+ ! --- grid ---
+    
+ NX        651              ! 0..650 m at dx=1 m
+ ** Error            : Illegal keyword: NX      
+ ** Error            : Data field skipped:651                                                                                                                                                                                 
+    
+ DX        1.0
+ ** Error            : Illegal keyword: DX      
+ ** Error            : Data field skipped:1.0                                                                                                                                                                                 
+    
+ 
+    
+ ! --- bathymetry ---
+    
+ READinp   BOTtom 'ipan_transect.bot'
+ ** Severe error     : define computational grid before reading coordinates or input grids
+ ** Severe error     : Wrong type of data for variable FAC                                     
+ -> FAC  item=ipan_transect.bot
+ ** Severe error     : No value for variable FNAME                                   
+ ** Terminating error: input grid is not given

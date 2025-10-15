@@ -1,0 +1,40 @@
+$*************HEADING****************************************
+$
+PROJ 'T11cou01' 'T11'
+$
+$ PURPOSE OF TEST: test of coupling SWAN - SWASH
+$                  C1a: Hm0 = 0.3 m, Tp = 8 s, dspr = 2 degr
+$                       horizontal bottom (depth = 5 m)
+$
+$ --|--------------------------------------------------------------|--
+$   | This SWAN input file is part of the bench mark tests for     |
+$   | SWAN. More information about this test can be found in       |
+$   | an accompanied document.                                     |
+$ --|--------------------------------------------------------------|--
+$
+$***********MODEL INPUT**************************************
+$
+CGRID 0. 0. 0. 10000. 10000. 50 50 SECTOR 75. 105. 20 0.08 1.0
+$
+INPGRID BOTTOM 0. 0. 0. 1 1 10000. 10000.
+READINP BOTTOM 5. 't11coupl.bot'  1 0 FREE
+$
+BOU SHAPE JON PEAK DSPR DEGR
+BOU SIDE S CCW CON PAR 0.3 8. 90. 2.
+$
+OFF QUAD
+OFF BREA
+OFF WCAP
+$
+$************ OUTPUT REQUESTS *************************
+$
+CURVE 'line' 5000. 5000. 1  5100. 5000.
+SPEC  'line' SPEC2D 't11cou01.sp2'
+
+POINTS 'loc' 5050. 5050.
+SPEC   'loc' SPEC1D 't11cou01.spc'
+TABLE  'loc' HEAD   't11cou01.tab' XP YP DEPTH BOTLEV HS RTP TM01 TM02 DSPR
+$
+TEST 1,0
+COMPUTE
+STOP

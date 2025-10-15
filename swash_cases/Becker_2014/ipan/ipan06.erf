@@ -1,0 +1,11 @@
+Error            : Illegal keyword: TITLE   
+Error            : Data field skipped:Becker(2014): Figure 6                                                                                                                                                              
+Error            : Illegal keyword: DYNAMIC 
+Error            : Illegal keyword: NX      
+Error            : Data field skipped:651                                                                                                                                                                                 
+Error            : Illegal keyword: DX      
+Error            : Data field skipped:1.0                                                                                                                                                                                 
+Severe error     : define computational grid before reading coordinates or input grids
+Severe error     : Wrong type of data for variable FAC                                     
+Severe error     : No value for variable FNAME                                   
+Terminating error: input grid is not given

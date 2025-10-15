@@ -1,0 +1,39 @@
+$*************HEADING***********************************
+$
+PROJ 'T11cou01' 'T11'
+$
+$ PURPOSE OF TEST: test of coupling SWAN - SWASH
+$                  C1a: Hm0 = 0.3 m, Tp = 8 s, dspr = 2 degr
+$                       horizontal bottom (depth = 5 m)
+$
+$ --|--------------------------------------------------------------|--
+$   | This SWASH input file is part of the bench mark tests for    |
+$   | SWASH. More information about this test can be found in      |
+$   | an accompanied document.                                     |
+$ --|--------------------------------------------------------------|--
+$
+$***********MODEL INPUT*********************************
+$
+SET SEED=2147483398
+$
+CGRID 5000. 5000. 0. 100. 250. 50 125
+$
+INPGRID BOTTOM 5000. 5000. 0. 1 1 100. 250.
+READINP BOTTOM 5. 't11coupl.bot'  1 0 FREE
+$
+INIT zero
+$
+BOU SIDE S CCW BTYPE WEAK VAR SPECSWAN 't11cou01.sp2' cycle 25 min
+BOU SIDE N CCW BTYPE RADIATION
+SPON UP 150.
+$
+NONHYDrostatic
+$
+$************ OUTPUT REQUESTS *************************
+$
+POINTS 'loc' 5050. 5050.
+TABLE  'loc' NOHEAD 't11cou01.tbl' TSEC XP YP DEPTH BOTLEV WATL OUTPUT 000500.000 0.1 SEC
+$
+TEST 1,0
+COMPUTE 000000.000 0.1 SEC 003000.000
+STOP

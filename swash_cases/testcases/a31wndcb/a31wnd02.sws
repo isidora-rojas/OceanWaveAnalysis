@@ -1,0 +1,44 @@
+$*************HEADING***********************************
+$
+PROJ 'A31wnd02' 'A31'
+$
+$  Wind setup in closed basin, test 2: relative wind velocity
+$
+$ --|--------------------------------------------------------------|--
+$   | This SWASH input file is part of the bench mark tests for    |
+$   | SWASH. More information about this test can be found in      |
+$   | an accompanied document.                                     |
+$ --|--------------------------------------------------------------|--
+$
+$***********MODEL INPUT*********************************
+$
+SET temp = 4. salinity = 0.1 rhoair = 1.225
+$
+MODE DYN ONED
+$
+CGRID 0. 0. 0. 10000. 0. 100 0
+$
+VERT 1
+$
+INPGRID BOTTOM 0. 0. 0. 1 0 10000. 1.
+READINP BOTTOM 5. 'a31wind.bot' 1 0 FREE
+$
+INIT zero
+$
+WIND 30. 0. CONSTANT cd = 0.0043 RELATIVE
+FRIC CHEZY 60.
+VISC 0.
+$
+DISCRET UPW MUSCL
+DISCRET CORRDEP FIRST
+$
+TIMEI METH EXPL
+$
+$************ OUTPUT REQUESTS *************************
+$
+POINTS 'GAUGE' 10000. 0.
+TABLE  'GAUGE' NOHEAD 'a31wnd02.tbl' TSEC WATL OUTPUT 000000.000 1 MIN
+$
+TEST 1,0
+COMPUTE 000000.000 10. SEC 080000.000
+STOP

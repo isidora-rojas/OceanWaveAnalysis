@@ -1,0 +1,58 @@
+$*************HEADING****************************************
+$
+PROJ 'L63ree18' 'L63'
+$
+$ Infragravity waves and runup over fringing reef
+$ from Demirbilek et al. (2007)
+$
+$ Test nr 18: Hm0 = 8.5 cm, Tp = 2.0 s, SWL = 5.1 cm
+$
+$ --|--------------------------------------------------------------|--
+$   | This SWASH input file is part of the bench mark tests for    |
+$   | SWASH. More information about this test can be found in      |
+$   | an accompanied document.                                     |
+$ --|--------------------------------------------------------------|--
+$
+$***********MODEL INPUT**********************************
+$
+SET LEVEL=0.051
+$
+MODE NONSTATIONARY ONED
+$
+CGRID REG -15.72 0. 0. 28.9 0. 578 0
+$
+INPGRID BOTTOM REGULAR -15.72 0. 0. 2891 0 0.01 0.
+READ BOTTOM 1. 'l63reef.bot' 1 0 FREE
+$
+INIT ZERO
+$
+BOUN SIDE W BTYPE WEAK CON SERIES 'l63ree18.bnd'
+$
+FRIC MANNING 0.01
+BREAK
+NONHYDROSTATIC
+$
+DISCRET UPW MOM
+DISCRET UPW UMOM H NONE
+DISCRET UPW WMOM H NONE
+$
+TIMEI METH EXPL 0.1 0.5
+$
+$************ OUTPUT REQUESTS *************************
+$
+$ gauge locations
+POINTS 'points'  FILE 'l63reef.loc'
+CURVE  'section' -5.00 0. 36 13.00 0.
+$
+$ surface elevation
+QUANT XP HEXP 10.
+TABLE  'points'  NOHEAD 'l63ree18.tab' TSEC XP DEPTH BOTL WATL OUTPUT 000140.000 0.05 SEC
+TABLE  'section' NOHEAD 'l63ree18.tbl' TSEC XP DEPTH BOTL WATL OUTPUT 000140.000 0.05 SEC
+$
+$ maximum runup
+GROUP 'runup' 1 579 1 1
+TABLE 'runup' HEAD 'l63ree18.runup' XP BOTL HRUNUP
+$
+TEST 1 0
+COMPUTE 000000.000 0.005 SEC 001500.000
+STOP

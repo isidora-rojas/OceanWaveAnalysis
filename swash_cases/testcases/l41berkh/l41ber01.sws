@@ -1,0 +1,57 @@
+$*************HEADING***********************************
+$
+PROJ 'L41ber01' 'L41'
+$
+$  Wave deformation by an elliptic shoal on sloped bottom
+$  from Berkhoff et al. (1982)
+$
+$ --|--------------------------------------------------------------|--
+$   | This SWASH input file is part of the bench mark tests for    |
+$   | SWASH. More information about this test can be found in      |
+$   | an accompanied document.                                     |
+$ --|--------------------------------------------------------------|--
+$
+$***********MODEL INPUT*********************************
+$
+CGRID -10. -10. 0. 20. 35. 200 700
+$
+INPGRID BOTTOM -10. -10. 0. 200 700 0.1 0.05
+READINP BOTTOM 1. 'l41berkh.bot' 3 0 FREE
+$
+INIT zero
+$
+BOU SIDE S CCW BTYPE WEAK CON REG 0.0464 1.
+BOU SIDE N CCW BTYPE RADIATION
+SPON UP 5.
+$
+NONHYDrostatic
+$
+DISCRET CORRDEP MINMOD
+$
+$************ OUTPUT REQUESTS *************************
+$
+QUANT DIST HEXP 10.
+$
+CURVE 'sect1' -4.75 1. 380  4.75  1.
+CURVE 'sect2' -4.75 3. 380  4.75  3.
+CURVE 'sect3' -4.75 5. 380  4.75  5.
+CURVE 'sect4' -4.75 7. 380  4.75  7.
+CURVE 'sect5' -4.75 9. 380  4.75  9.
+CURVE 'sect6'  2.00 0. 220  2.00 11.
+CURVE 'sect7'  0.00 0. 220  0.00 11.
+CURVE 'sect8' -2.00 0. 220 -2.00 11.
+$
+TABLE 'sect1' NOHEAD 'section1.tbl' TSEC XP WATL VEL OUTPUT 000030.000 0.01 SEC
+TABLE 'sect2' NOHEAD 'section2.tbl' TSEC XP WATL VEL OUTPUT 000030.000 0.01 SEC
+TABLE 'sect3' NOHEAD 'section3.tbl' TSEC XP WATL VEL OUTPUT 000030.000 0.01 SEC
+TABLE 'sect4' NOHEAD 'section4.tbl' TSEC XP WATL VEL OUTPUT 000030.000 0.01 SEC
+TABLE 'sect5' NOHEAD 'section5.tbl' TSEC XP WATL VEL OUTPUT 000030.000 0.01 SEC
+TABLE 'sect6' NOHEAD 'section6.tbl' TSEC YP WATL VEL OUTPUT 000030.000 0.01 SEC
+TABLE 'sect7' NOHEAD 'section7.tbl' TSEC YP WATL VEL OUTPUT 000030.000 0.01 SEC
+TABLE 'sect8' NOHEAD 'section8.tbl' TSEC YP WATL VEL OUTPUT 000030.000 0.01 SEC
+$
+BLOCK 'COMPGRID' NOHEAD 'l41ber01.mat' LAY 3 XP YP BOTL WATL VKSI VETA OUTPUT 000030.000 5 SEC
+$
+TEST 1,0
+COMPUTE 000000.000 0.01 SEC 000035.000
+STOP

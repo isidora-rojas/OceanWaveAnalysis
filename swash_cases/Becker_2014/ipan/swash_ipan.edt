@@ -1,0 +1,50 @@
+! -------------------------------------------------------------
+! SWASH: 1D IPAN-like reef with time-varying tide (single run)
+! - Reef flat: 0–400 m at 0.5 m depth
+! - Reef face: 400–580 m slope 0.06 to ~11.3 m, buffer to 650 m
+! Inputs:
+!   reef_transect.bot         (x depth, depth positive down)
+!   tide_semidiurnal.wlv      (time[s]  water_level[m])
+! -------------------------------------------------------------
+
+PROJECT   'IPAN_1D' '001'
+TITLE     'Becker(2014): Figure 6'
+
+MODE      ONEDimensional DYNamic
+COORDINATES CARTESIAN
+
+! --- grid ---
+NX        651              ! 0..650 m at dx=1 m
+DX        1.0
+
+! --- bathymetry ---
+READinp   BOTtom 'ipan_transect.bot'
+
+! --- physics / numerics ---
+BOTTOM    FRICTION CHEZY 50
+!NONHYDROSTATIC                ! Uncomment if required by your build
+!DISPERSION ON                 ! Optional, version-specific
+
+! --- time-varying uniform water level (tide) ---
+! 12 hours total, 10-min step. Ensure TIME TOTAL matches.
+NONSTATionary   0.0   600.0   SEC   43200.0
+READinp WLEVel 'ipan_tide.wlv'
+
+! --- boundaries ---
+BOUNDARY WEST  SPECTRUM JONSWAP HS 1.5 TP 12.0 DIR 0 SPREAD 10
+BOUNDARY EAST  RADIATION
+
+! --- sponge/absorbing layer offshore ---
+SPONGE   EAST LENGTH 50
+
+! --- output gauges ---
+OUTPUT TIMESERIES 'gauges.out' POINTS
+  277.0  0.0     ! mid-reef (reef flat)
+  580.0  0.0     ! fore-reef deep gauge
+END
+
+! --- run control ---
+TIME      TOTAL 43200.0       ! 12 hours
+DT        0.02
+OUTPUT    INTERVAL 0.5
+! -------------------------------------------------------------

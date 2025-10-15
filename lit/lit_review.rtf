@@ -1,0 +1,133 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2822
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 \\documentclass\{article\}\
+\\usepackage\{graphicx\} % Required for inserting images\
+\\usepackage\{natbib\}\
+\\usepackage\{hyperref\} % For clickable references\
+\\usepackage\{fullpage\}\
+\\usepackage\{placeins\}\
+\\usepackage\{lineno\}\
+\\usepackage\{authblk\}\
+\\usepackage\{amsmath\}\
+\\usepackage\{placeins\}\
+\\usepackage\{float\}\
+\\usepackage\{setspace\}\
+\
+\\newcommand\{\\eg\}\{e.g.,~\}\
+\
+\\title\{Wave-Driven Flow Over Coral Reefs\}\
+\\author[1]\{Isidora Antonia Rojas\}\
+\\affil[1]\{Scripps Institution of Oceanography, UC San Diego, La Jolla CA USA\}\
+\
+\\date\{September 2025\}\
+\
+\\begin\{document\}\
+\
+\\doublespacing\
+\\maketitle\
+\\linenumbers\
+\
+\\section\{Introduction\}\
+\
+Coral reef systems act as natural breakwaters, dissipating a large fraction of incident wave energy before it reaches shore. This wave attenuation, through bottom roughness and current flow, translates directly into coastal hazard mitigation by damping wave heights. \\citet\{reguero_2021\} conducted a model analysis of coral reefs as flood risk reduction tools - finding that the top one meter of U.S. coral reefs is estimated to prevent a 23 percent increase in 100-year flood extent, thereby avoiding inundation for roughly 54,000 people and 2.7 billion USD in building damages during extreme events. These benefits disproportionately affect vulnerable low-lying communities.\
+\
+Given the critical role of reefs in nature-based coastal defense, understanding the mechanics of wave-driven flow over coral reefs is of importance. Wave breaking on reef structures drives wave setup - a sustained elevation of mean water level and associated currents that flush water across the reef. At the scale of an entire reef, 100m-1km , wave-driven flows are often the dominant mechanism of circulation \\citep\{monismith_2007\}. Accurately observing and modeling these processes is essential for predicting coastal flooding and for guiding reef management and restoration. In the following, I will review the theory of wave-induced radiation stresses and setup on reefs, examine field observations of reef hydrodynamics, and consider the implications of reef morphology, tidal fluctuations, and sea-level rise on wave-driven circulation. \
+\
+\\section\{Theory\}\
+Classical wave theory provides the foundation for understanding flow over reefs. \\citet\{longuet-higgins_1964\} first introduced the concept of radiation stress, defined as the excess momentum flux due to the presence of propagating waves - as seen in equation 1. Spatial gradients in radiation stress give rise to net forces in the water column. \
+\
+ \\begin\{equation\}\
+S_\{xx\} = E ( \\frac\{2kh\}\{sinh(2kh)\} + \\frac\{1\}\{2\}) \
+\\end\{equation\}\
+\
+In a simplified, one-dimensional, plane beach solution, wave shoaling produces an increase in $S_\{xx\}$. By Equation 2, this produces a set-down, or lowering of mean water level. Once waves reach the breaking points, energy quickly dissipates causing an increase in water level, or setup. \
+\
+\\begin\{equation\}\
+g\\frac\{\\partial \\bar\{\\zeta\}\}\{\\partial x_1\} \\approx -\\frac\{1\}\{\\rho(\\bar\{\\zeta\}+h)\}\\frac\{\\partial S_\{11\}\}\{\\partial x_1\}\
+\\end\{equation\}\
+\
+\\begin\{figure\}[H]\
+    \\centering\
+    \\includegraphics[width=0.6\\linewidth]\{figs/fig1.png\}\
+    \\caption\{Schematic reef defining the parameters used in the theoretical model. from \\citet\{symonds_1995\}\}\
+\\end\{figure\}\
+\
+This radiation stress theory was first applied to computing wave-driven flow over reefs by \\citep\{symonds_1995\}. A schematic is shown in Figure 1. They applied radiation stress theory to a shallow fringing reef using a one-dimensional model. The difference between a reef and a beach solution is due to the presence of the reef flat. At the breakpoint, waves rapidly lose energy leading to a wave setup - an elevated mean water level on the shallow reef flat. This setup creates a pressure gradient that drives the flow from the reef to the open ocean. Wave breaking on the reef pumps water onto the reef, which then must return seaward as a steady reef flat outflow (typically concentrated in channels). Thus, a friction induced current was added to the momentum balance.\
+\\begin\{equation\}\
+g\\frac\{\\partial \\zeta\}\{\\partial x\} = -\\frac\{1\}\{\\rho h\}\\frac\{\\partial S_\{xx\}\}\{\\partial x\} - \\frac\{r u\}\{h\}\
+\\end\{equation\}\
+\
+Symonds et al. showed that their models predictions of wave setup and cross-reef currents correlated well with field observations on John Brewer Reef in Queensland, Australia, confirming the validity of the radiation stress approach for reef environments as seen in figure 2.\
+\
+\\begin\{figure\}[H]\
+        \\centering\
+        \\includegraphics[width=0.5\\linewidth]\{fig2.png\}\
+        \\caption\{Typical configuration of a reef and lagoon as used in the analytical model showing the adopted notation (Hearn 1999)\}\
+    \\end\{figure\}\
+\
+Building on this foundation, \\citet\{hearn_1999\} introduced a useful parameter for characterizing wave-reef interactions, $R_1 = \\frac\{H\}\{h_b\}$. This is the ratio of reef flat depth to water depth at the breakpoint $h_b$. This non-dimensional "relative shallowness" parameter indicates the regime of wave breaking on the reef. \\citet\{hearn_1999\} identified two limiting cases: (1) when $R_1 \\to 0$ (very shallow reef flat relative to breaking depth), wave-driven currents are weak because bottom friction dominates. (2) When $R_1 \\to 1$ (reef flat similar height to breaking depth), currents also weaken because limited wave breaking produces limited changes in $S_\{xx\}$. Between these extremes lies a \'93sweet spot\'94 where wave-driven flow is maximized. Hearn\'92s analysis suggested an optimal value around $R_1 \\approx 0.5$ that produces the strongest cross-reef currents. Physically, this intermediate regime represents conditions where waves break vigorously on the reef crest (producing a strong setup), yet the water depth is not so shallow as to cause excessive frictional dissipation of the currents. This concept helps explain why moderate water levels can drive stronger flushing flows than extremely low or extremely high water levels on a reef.\
+\
+Yet, both Symonds and Hearns et. al. made assumptions that may not be valid in real reef scenarios. For example, both models make the assumption that $\\eta$ goes to zero at the end of the reef flat. However, the water level must rise in the lagoon or at the end of the flat reef to drive the flow out through the channels in the reef back offshore \\citep\{monismith_2007\}.\
+\
+\\section\{Observations and Validation\}\
+\\subsection\{1D Validation\}\
+\
+Several field studies have quantified wave-driven flow and setup on coral reefs, providing ground truth for the theory. One well-studied site is Kaneohe Bay, Oahu (Hawai\'91i) \'96 a barrier reef sheltering a lagoon \'96 which was investigated by \\citet\{lowe_2009\}. Water flows onshore across the shallow reef flats (over the reef crest), raising the mean water level on the reef and in the lagoon (wave setup). This water then returns to the ocean primarily through deep reef channels that bisect the reef barrier.\
+\
+Measurements over a 2-month period captured the persistent circulation driven by incoming Pacific swell. The observations showed that breaking waves induce two large counter-rotating circulation cells in the bay. The main objective of this paper was to investigate how the aforementioned funamental momentum balances governing wave setup and circulation are affected by reef morphology. Figure 4 shows the instrument array, a combination of ADCP's and pressure sensors. \
+\
+\\begin\{figure\}[H]\
+        \\centering\
+        \\includegraphics[width=0.5\\linewidth]\{figs/fig3.png\}\
+        \\caption\{Kaneohe Bay, Oahu, HI. (a) Quickbird aerial photograph (Digitalglobe) with the instrument locations superimposed. The offshore wave buoy (not shown) is located ;8 km southeast of Mokapu Peninsula bounding the southern end of the bay. (b) The bathymetry highlights its dominant morphological features. \\citep\{lowe_2009\}\}\
+    \\end\{figure\}\
+\
+In Kaneohe, mean currents over the reef flat were on the order of several cm/s (with instantaneous speeds up to ~10 cm/s), while flows in the semi-enclosed lagoon interior were much weaker (~1\'962 cm/s mean) This illustrates how most of the wave momentum is expended in pushing water over the reef (and driving fast channel outflows), whereas inside the lagoon the residual motions are relatively calm. Figure 4 shows a qualitative description of the results. The data also confirmed key theoretical expectations: wave breaking at the reef crest was the dominant mechanism driving flow on the reef, whereas within the deeper lagoon, direct wave forcing played a smaller role. Notably, even in a complex 2D reef geometry, the cross-shore distribution of setup and the magnitude of flows aligned well with 1D theory, lending confidence in using simplified models for prediction.\
+\
+\\begin\{figure\}\
+        \\centering\
+        \\includegraphics[width=0.5\\linewidth]\{figs/fig4.png\}\
+        \\caption\{from \\citet\{lowe_2009\}: (a) Time-average Eulerian current vectors, (b) principal component ellipses (radii represent one current velocity standard deviation), (c) time-averaged Stokes drift vectors, and (d) M2 tidal ellipses. . Note the differences in the velocity scales between the figures. \\citep\{lowe_2009\}\}\
+    \\end\{figure\}\
+\
+\\subsection\{Effects of Tide Modulations\}\
+Another set of field studies examined tide-modulated wave setup on fringing reefs. \\citet\{becker_2014\} deployed instruments on Pacific island coral reefs (Majuro and Roi-Namur atolls in the Marshall Islands, and Ipan in Guam) to measure how water level (tide) variations affect wave breaking and setup. They found a pronounced tidal dependence: at high tide, greater water depth allowed larger waves to penetrate further shoreward before breaking, whereas at low tide, waves broke earlier and more energy was dissipated seaward. Essentially, the water depth to breaking depth ratio varies with tide. \\citet\{becker_2014\} interpreted their observations with an idealized point break model (Equation 4), finding that wave setup on the reef flat correlates strong with the ratio $H/h_b$ at the breaker line, consistent with Hearn\'92s $R_1$ concept. For equation 4, $bar\{\\eta_r\}$ and $bar\{\\eta_b\}$ is the setup on the reef flat and setdown at the breakpoint, respectively and is related to the difference between the wave height at breaking, $H_b$ and the wave height post breaking $H_r$.\
+\\begin\{equation\}\
+\\bar\{\\eta\}_r - \\bar\{\\eta\}_b = \\frac\{3\}\{8\} \\gamma_b (H_b - H_r),\
+\\end\{equation\}\
+Their results indicated that wave setup can change by on the order of 20-40 percent over a tidal cycle. \
+\
+\\subsection\{Effects of Reef Morphology\}\
+Wave-driven flow patterns can also be influenced by reef morphology. \\citet\{clark_2020\} studied a fringing reef in Guam that is interrupted by a prominent cross-shore channel. Their measurements at Ipan, Guam showed that the presence of this channel fundamentally redirects the flow. When waves broke on the reef flat, the resulting setup drove water alongshore toward the channel (instead of directly over the reef crest everywhere). Mean currents on the reef were deflected toward the channel opening, and near the channel the flow actually turned seaward, draining out through the channel. They observed that low-frequency oscillations in reef currents corresponded with changes in incident wave height, suggesting that stronger waves enhanced the exchange through the channel. The deep channel effectively provided an area of minimal breaking such that a pressure gradient developed between the reef flat and the channel outlet. This alongshore pressure gradient drove currents toward the channel, balancing against frictional stresses along the reef. An alongshore momentum balance between the pressure gradient and bottom drag was found to explain the observed currents on the reef flanks. These findings highlight that reef geometry (e.g. gaps, channels) can focus and localize wave-driven flows, creating complex circulation patterns beyond the simple 1D paradigm. \
+\
+\\section\{Modeling\}\
+\
+Numerical models and laboratory experiments are methods to further explore wave-driven circulation over reefs, validating theory and probing scenarios dificult to capture in the field. \\citet\{dasilva_2023\}, for instance, used a high resolution, phase resolving numerical model (SWASH) to analyze wave-driven currents in the lee of nearshore rocky reefs. These are smaller (order of 10m-100m) features found in many temperate coasts. The study revealed that waves interacting with such reefs can generate either a two-cell circulation (2CC) or four-cell circulation (4CC) in the wave shadow region. In the 2CC pattern, water diverges outward behind the reef and the shoreline, forming two circulating cells on either side. By contrast, the 4CC pattern has water behind the reef divering immediately in the lee but then converging toward the shoreline farther downstream, forming four cells in total. \
+\
+The numerical experiments showed that the switch between the 2CC and 4CC regimes is governed by the alongshore pressure gradients set up by the presence of the reef. If wave setup in the lee of the reef is significantly lower than the setup along adjacent exposed shorelines, than a pressure gradients directs water toward the sheltered area, causing flow convergences at that spot. This results in a 4CC pattern with onshore flow focusing behind the reef. Conversely, if the lee-shore setup is equal to or higher than nearby areas, the flow diverges (2CC pattern). \\citet\{dasilva_2023\} identified key geometric and wave factors that influence these outcomes: reef roughness, reef distance from shore, and beach slope were found to be the most influential parameters in determining whether a 2CC of 4CC circulation develops. By examining depth-resolved momentum balances, they confirmed that the interplay of cross-shore wave set and alongshore pressure gradients control the complex flow structures, augmented by wave refraction/diffraction around the reef. \
+\
+Other modeling effors have focused on verifying the classical momentum balance in reef environments and quantifying frictional effects. \\citet\{sous_2020\} conducted a combined field and modeling study on a barrier coral reef in New Caledonia to assess the depth averaged momentum during wave events. They deployed ADCPs and pressure sensors across the reef and ran a non-hydrostatic numerical wave model with turbulence closure to simulate the same events. The results showed that the aforementioned momentum balance generally held true, but important nuances. On the fore-reef, the dynamics resembled a sandy beach (radiation stress gradient balanced by pressure gradient from wave setup. However, on the reef flat and lagoon side, the flow transitioned toward an open-channel flow regime dominated by frictional head losses. After waves broke and drove water onto the reef, the deceleration and return flow over the brow, shallow reef were largely controlled by bottom friction. \
+\
+During extreme wave conditions, the team observed indications of a transition toward a critical flow regime on the reef flat. This suggests that very large wave forcing can push the hsallow reef system to approach the brink of hydraulically critical flow ($F_r = 1$, beyond which the nature of wave-driven transport could change - potentially leading to bores or choked flow over the reef crest. By examining the vertical structure of the flow in their simulations \\citet\{sous_2020\} noted a log-layer velocity profile near the reef bed consisten with a strong bottom drag as well as a circulation vortex under the wave-breaking region on the fore reef. This is likely related to the return flow, or undertow,  beneath the breaking waves. \
+\
+Overall, these modeling insights reingorce the theoretical understanding while emphasize the effects of reef morphology in modulating wave-driven circulation. \
+\
+\\section\{Conclusion and Future Work\}\
+\
+Coral reefs play a crucial role in driving circulation patterns that influence coastal flooding, ecosystem health, and sediment transport. Through the integration of classical radiation stress theory, field observations, and numerical modeling, this literature review has illustrated the dominant mechanisms of wave-driven flow over reefs and how these dynamics are modulated by reef geometry, tides, and wave conditions. While one-dimensional models capture many first-order features of reef circulation, observations and simulations reveal the importance of two-dimensional processes such as channelized flow and alongshore pressure gradients.\
+\
+Future work should incorporate more nonlinear processes such as infragravity (IG) wave dynamics, wave runup, and wave setup variability under extreme storm conditions. These additions are particularly relevant for quantifying reef system resilience to sea-level rise and increasing storm intensity. By extending existing models to resolve these higher-order effects and validating them with targeted field observations, we can better inform the design and evaluation of reef restoration and coastal protection strategies under future climate scenarios.\
+\
+\\section\{Acknowledgments\}\
+This final project for the MAE 224A Environmental Fluid Dynamics class was completed with support and feedback from Dr. Mark Merrifield. Thank you to Dr. Falk Feddersen for guidance on the literature review process. \
+\
+\
+\
+\\bibliographystyle\{apalike\}\
+\\bibliography\{wave_refs\}\
+\\end\{document\}}

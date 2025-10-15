@@ -1,0 +1,174 @@
+1
+
+                    Execution started at 20251006.182753         
+
+
+
+                    ---------------------------------------
+                                     SWASH
+                         WAVE MOTION IN COASTAL WATERS     
+                             VERSION NUMBER 11.01A              
+                    ---------------------------------------
+
+
+    
+ Project 'Mono 1D minimal'
+ ** Severe error     : No value for variable NR                                      
+    
+ Mode nonhydrostatic
+    
+ Coordinates x
+ ** Error            : Illegal keyword: X       
+    
+ 
+    
+ # Grid: define by Xmin/Xmax/Dx (do NOT give Nx here)
+ ** Error            : Data field skipped:#                                                                                                                                                                                   
+ ** Severe error     : No value for variable XLENC                                   
+ -> XLENC  item=DEFINE
+ ** Severe error     : No value for variable YLENC                                   
+ -> YLENC  item=DEFINE
+ ** Error            : Illegal keyword: DEFINE  
+ ** Error            : Illegal keyword: BY      
+ ** Error            : Illegal keyword: XMIN    
+ ** Error            : Illegal keyword: XMAX    
+ ** Error            : Illegal keyword: DX      
+ ** Error            : Illegal keyword: DO      
+ ** Error            : Illegal keyword: NOT     
+ ** Error            : Illegal keyword: GIVE    
+ ** Error            : Illegal keyword: NX      
+ ** Error            : Illegal keyword: HERE    
+ ** Error            : Data field skipped:)                                                                                                                                                                                   
+    
+ Xmin 0.0
+ ** Error            : Illegal keyword: XMIN    
+ ** Error            : Data field skipped:0.0                                                                                                                                                                                 
+    
+ Xmax 200.0
+ ** Error            : Illegal keyword: XMAX    
+ ** Error            : Data field skipped:200.0                                                                                                                                                                               
+    
+ Dx   1.0
+ ** Error            : Illegal keyword: DX      
+ ** Error            : Data field skipped:1.0                                                                                                                                                                                 
+    
+ 
+    
+ # Vertical layers
+ ** Error            : Data field skipped:#                                                                                                                                                                                   
+ ** Error            : Illegal keyword: LAYERS  
+    
+ Nz 1
+ ** Error            : Illegal keyword: NZ      
+ ** Error            : Data field skipped:1                                                                                                                                                                                   
+    
+ 
+    
+ # Bottom: -5 m at x=0 to 0 m at x=200
+ ** Error            : Data field skipped:#                                                                                                                                                                                   
+ ** Error            : Illegal keyword: BOTTOM  
+ ** Error            : Data field skipped:-5                                                                                                                                                                                  
+ ** Error            : Illegal keyword: M       
+ ** Error            : Illegal keyword: AT      
+ ** Error            : Illegal keyword: X       
+ ** Error            : Data field skipped:0                                                                                                                                                                                   
+ ** Error            : Illegal keyword: TO      
+ ** Error            : Data field skipped:0                                                                                                                                                                                   
+ ** Error            : Illegal keyword: M       
+ ** Error            : Illegal keyword: AT      
+ ** Error            : Illegal keyword: X       
+ ** Error            : Data field skipped:200                                                                                                                                                                                 
+    
+ Bedlevel linear 0.0 200.0 -5.0 0.0
+ ** Error            : Illegal keyword: BEDLEVEL
+    
+ 
+    
+ # Time stepping
+ ** Error            : Data field skipped:#                                                                                                                                                                                   
+ ** Error            : Illegal keyword: TIME    
+ ** Error            : Illegal keyword: STEPPING
+    
+ Time 60.0
+ ** Error            : Illegal keyword: TIME    
+ ** Error            : Data field skipped:60.0                                                                                                                                                                                
+    
+ Dt   0.05
+ ** Error            : Illegal keyword: DT      
+ ** Error            : Data field skipped:0.05                                                                                                                                                                                
+    
+ 
+    
+ # Offshore boundary: true monochromatic (use Height/Period only)
+ ** Error            : Data field skipped:#                                                                                                                                                                                   
+ ** Error            : Illegal keyword: OFFSHORE
+ ** Severe error     : command CGRID must precede this command
+ ** Error            : Illegal keyword: TRUE    
+ ** Error            : Illegal keyword: MONOCHRO
+ ** Error            : Illegal keyword: USE     
+ ** Error            : Illegal keyword: HEIGHT  
+ ** Error            : Illegal keyword: PERIOD  
+ ** Error            : Illegal keyword: ONLY    
+ ** Error            : Data field skipped:)                                                                                                                                                                                   
+    
+ Boundary 'west'
+ ** Error            : Data field skipped:west                                                                                                                                                                                
+ ** Severe error     : command CGRID must precede this command
+    
+    Type monochromatic
+ ** Error            : Illegal keyword: TYPE    
+ ** Error            : Illegal keyword: MONOCHRO
+    
+    Height 1.0
+ ** Error            : Illegal keyword: HEIGHT  
+ ** Error            : Data field skipped:1.0                                                                                                                                                                                 
+    
+    Period 8.0
+ ** Error            : Illegal keyword: PERIOD  
+ ** Error            : Data field skipped:8.0                                                                                                                                                                                 
+    
+ End
+ ** Error            : Illegal keyword: END     
+    
+ 
+    
+ # Minimal output (line of eta) so we’re sure it writes something
+ ** Error            : Data field skipped:#                                                                                                                                                                                   
+ ** Error            : Illegal keyword: MINIMAL 
+ ** Severe error     : No value for variable CENTRE                                  
+ -> CENTRE  item=OF
+ ** Severe error     : No value for variable WIDTH                                   
+ -> WIDTH  item=OF
+ ** Error            : Illegal keyword: OF      
+ ** Error            : Illegal keyword: ETA     
+ ** Error            : Data field skipped:)                                                                                                                                                                                   
+ ** Error            : Illegal keyword: SO      
+ ** Error            : Illegal keyword: WE      
+ ** Error            : Data field skipped:’re                                                                                                                                                                               
+ ** Error            : Illegal keyword: SURE    
+ ** Error            : Illegal keyword: IT      
+ ** Error            : Illegal keyword: WRITES  
+ ** Error            : Illegal keyword: SOMETHIN
+    
+ Output 'test_output'
+ ** Error            : too long string given for: COMMENT                                 
+ name=COMMENT string=test_output
+    
+    Surface elevation
+ ** Error            : Illegal keyword: SURFACE 
+ ** Error            : Illegal keyword: ELEVATIO
+    
+    Line x
+ ** Severe error     : No value for variable CENTRE                                  
+ -> CENTRE  item= 
+ ** Severe error     : No value for variable WIDTH                                   
+ -> WIDTH  item= 
+    
+    Period 1.0
+ ** Error            : Illegal keyword: PERIOD  
+ ** Error            : Data field skipped:1.0                                                                                                                                                                                 
+    
+ End
+ ** Error            : Illegal keyword: END     
+    
+ ** Terminating error: unexpected end of command input

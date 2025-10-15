@@ -1,0 +1,45 @@
+$*************HEADING***********************************
+$
+PROJ 'A14prw02' 'A14'
+$
+$  Linear progressive wave in a flume (kh = 6.28)
+$
+$ --|--------------------------------------------------------------|--
+$   | This SWASH input file is part of the bench mark tests for    |
+$   | SWASH. More information about this test can be found in      |
+$   | an accompanied document.                                     |
+$ --|--------------------------------------------------------------|--
+$
+$***********MODEL INPUT*********************************
+$
+MODE DYN ONED
+$
+CGRID 0. 0. 0. 240. 0. 360 0
+$
+VERT 3  10. 20. 70.
+$
+INPGRID BOTTOM 0. 0. 0. 1 0 240. 1.
+READINP BOTTOM 20. 'a14prwav.bot' 1 0 FREE
+$
+INIT zero
+$
+BOU SIDE W CCW BTYPE WEAK SMOO 1.7896 SEC CON REG 0.04 3.5791
+BOU SIDE E CCW BTYPE RADIATION
+SPON RI 40.
+
+NONHYDrostatic BOX PREC ILU
+$
+DISCRET UPW NONE
+DISCRET UPW UMOM V NONE
+DISCRET CORRDEP NONE
+$
+TIMEI 0.2 0.5
+$
+$************ OUTPUT REQUESTS *************************
+$
+GROUP 'GAUGE' 90 90 1 1
+TABLE 'GAUGE' NOHEAD 'a14prw02.tbl' TSEC WATL OUTPUT 000000.000 0.0125 SEC
+$
+TEST 1,0
+COMPUTE 000000.000 0.025 SEC 000112.000
+STOP

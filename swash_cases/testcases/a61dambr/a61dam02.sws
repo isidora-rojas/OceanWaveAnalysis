@@ -1,0 +1,43 @@
+$*************HEADING***********************************
+$
+PROJ 'A61dam02' 'A61'
+$
+$  Dam break test, wet bed case
+$
+$ --|--------------------------------------------------------------|--
+$   | This SWASH input file is part of the bench mark tests for    |
+$   | SWASH. More information about this test can be found in      |
+$   | an accompanied document.                                     |
+$ --|--------------------------------------------------------------|--
+$
+$***********MODEL INPUT*********************************
+$
+SET depmin = 1.e-10
+$
+MODE DYN ONED
+$
+CGRID 0. 0. 0. 100. 0. 2000 0
+$
+INPGRID BOTTOM 0. 0. 0. 1 0 100. 0.
+READINP BOTTOM 1. 'a61dambr.bot' 1 0 FREE
+$
+INPGRID WLEV 0. 0. 0. 2000 0 0.05 0.
+READINP WLEV 1. 'a61dam02.wlv' 1 0 FREE
+$
+FRIC CONST 0.
+VISC 0.
+$
+DISCRET UPW MOM MINMOD
+DISCRET CORR MINMOD
+$
+TIMEI METH EXPL CFLLOW = 0.05 CFLHIG = 0.1
+$
+$************ OUTPUT REQUESTS *************************
+$
+QUANT DIST HEXP 10.
+GROUP 'LINE' 1 2001  1 1
+TABLE 'LINE' HEAD 'a61dam02.tbl' DIST WATL VEL
+$
+TEST 1,0
+COMPUTE 000000.000 0.001 SEC 000007.000
+STOP

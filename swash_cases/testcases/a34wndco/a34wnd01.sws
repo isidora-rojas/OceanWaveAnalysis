@@ -1,0 +1,44 @@
+$*************HEADING***********************************
+$
+PROJ 'A34wnd01' 'A34'
+$
+$  Wind setup in semi-closed basin, test 1: correction to wind velocity at surface
+$
+$ --|--------------------------------------------------------------|--
+$   | This SWASH input file is part of the bench mark tests for    |
+$   | SWASH. More information about this test can be found in      |
+$   | an accompanied document.                                     |
+$ --|--------------------------------------------------------------|--
+$
+$***********MODEL INPUT*********************************
+$
+SET temp = 4. salinity = 0.1 rhoair = 1.225
+$
+MODE DYN ONED
+$
+CGRID 0. 0. 0. 10000. 0. 100 0
+$
+VERT 1
+$
+INPGRID BOTTOM 0. 0. 0. 1 0 10000. 1.
+READINP BOTTOM 5. 'a34wind.bot' 1 0 FREE
+$
+INIT zero
+$
+BOU SIDE W CCW BTYPE WLEV CON 0.
+$
+WIND 30. 0. CONSTANT cd = 0.0043 RELATIVE alpha = 1.
+FRIC CHEZY 60.
+VISC 0.
+$
+DISCRET UPW FIRST
+DISCRET CORRDEP FIRST
+$
+$************ OUTPUT REQUESTS *************************
+$
+POINTS 'GAUGE' 10000. 0.
+TABLE  'GAUGE' NOHEAD 'a34wnd01.tbl' TSEC WATL OUTPUT 000000.000 1 MIN
+$
+TEST 1,0
+COMPUTE 000000.000 10. SEC 080000.000
+STOP

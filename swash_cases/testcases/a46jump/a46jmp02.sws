@@ -1,0 +1,46 @@
+$*************HEADING***********************************
+$
+PROJ 'A46jmp02' 'A46'
+$
+$  Hydraulic jump and drop in open river: Zhou and Stansby (1999) test
+$
+$ --|--------------------------------------------------------------|--
+$   | This SWASH input file is part of the bench mark tests for    |
+$   | SWASH. More information about this test can be found in      |
+$   | an accompanied document.                                     |
+$ --|--------------------------------------------------------------|--
+$
+$***********MODEL INPUT*********************************
+$
+MODE DYN ONED
+$
+CGRID 0. 0. 0. 30.5 0. 60 0
+$
+INPGRID BOTTOM 0. 0. 0. 60 0 0.5 0.1
+READINP BOTTOM 1. 'a46jump.bot' 1 1 FREE
+$
+INPGRID WLEV 0. 0. 0. 1 0 30.5 1.
+READINP WLEV 1. 'a46jump.wlv' 1 0 FREE
+$
+INIT steady
+$
+BOU SIDE W CCW BTYPE RIEMANN CON 5.105
+BOU SIDE E CCW BTYPE OUTFLOW
+$
+FRIC MANNING 0.019
+VISC 0.
+$
+DISCRET UPW  MOM MUSCL
+DISCRET CORR FIRST
+$
+TIMEI METH IMPL 1.
+$
+$************ OUTPUT REQUESTS *************************
+$
+QUANT DIST HEXP 10.
+GROUP 'LINE' 1 61  1 1
+TABLE 'LINE' HEAD 'a46jmp02.tbl' DIST BOTLEV DEPTH WATL VEL
+$
+TEST 1,0
+COMPUTE 000000.000 0.1 SEC 001000.000
+STOP

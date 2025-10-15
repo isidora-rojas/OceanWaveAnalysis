@@ -1,0 +1,40 @@
+The following test cases can be used to make a configuration test of SWASH on your computer:
+
+a11stwav  -  a test with standing waves in a basin
+a13stwav  -  more tests with standing waves in a basin
+a14prwav  -  tests with progressive waves
+a31wndcb  -  tests with wind setup in closed basin
+a34wndco  -  tests with wind setup in semi-closed basin
+a46jump   -  test with hydraulic jump and drop in open river
+a61dambr  -  tests with dam break
+a81tidal  -  tidal wave flow case
+l12bbbar  -  test with wave propagation over submerged bar (Beji and Battjes experiment)
+l31setup  -  test with wave breaking on barred beach (Boers 1C experiment)
+l33turb   -  2DV turbulent channel flow (Nezu and Rodi, 1986)
+l41berkh  -  wave deformation by an elliptic shoal on sloped bottom (Berkhoff et al. experiment)
+t11coupl  -  test of coupling SWAN - SWASH
+t52lock   -  lock exchange test
+
+Below some tests that employ an unstructured triangular mesh
+
+u11stwav  -  a test with standing waves in a basin (comparable to a11stwav)
+u13stwav  -  more tests with standing waves in a basin (comparable to a13stwav)
+u33turb   -  2DV turbulent channel flow (comparable to l33turb)
+
+Not all measurement data are included as they are copyrighted!
+
+Instructions for use
+--------------------
+
+1) open dos prompt
+2) go to the directory of one of the available test cases (use 'CD' command)
+3) run the test case by just typing
+
+   swashrun <name_test>
+
+   with <name_test> the appropriate filename of the test case without extension '.sws'
+4) use Matlab for postprocessing. In all cases, just type
+
+   mkplot
+
+5) have fun!
