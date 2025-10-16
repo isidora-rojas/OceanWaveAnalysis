@@ -59,7 +59,8 @@ def loadPressureData(
     gravity: float = 9.81,
 ) -> PressureBursts:
     """
-    Load and stitch bursts from a Mokuleia sensor MAT file.
+    Load and stitch bursts from a Mokuleia sensor MAT file. Compute water
+    depth from gauge pressure and hydrostatic balance. 
 
     Parameters
     ----------
@@ -177,3 +178,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

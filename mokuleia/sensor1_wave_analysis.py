@@ -25,6 +25,7 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.io import loadmat
+from scipy.signal import spectrogram
 
 # physical constants
 PSI_TO_PA = 6894.757293168  # [Pa/psi]
@@ -266,6 +267,105 @@ def compute_sliding_spectra(series: SensorSeries, win_len: int = 2048, step: int
         freqs=freqs,
         surface_spectra=np.vstack(spectra),
         time_centers=np.array(t_mid),
+        hs_total=np.array(hs_total),
+        hs_sea_swell=np.array(hs_ss),
+        hs_infragravity=np.array(hs_ig),
+        tp_sea_swell=np.array(tp_ss),
+    )
+
+
+def compute_spectrogram_summary(
+    series: SensorSeries,
+    *,
+    nperseg: int = 8192,
+    noverlap: int | None = None,
+    window: str = "hann",
+    detrend: str | None = "constant",
+) -> SpectralSummary:
+    """
+    Time-evolving autospectra using scipy.signal.spectrogram.
+
+    Longer segment lengths (``nperseg``) push the frequency resolution to lower
+    bands while retaining a rolling estimate of the sea/swell energy.
+    """
+    p_hp = nan_interp(series.pressure_hp)
+    depth_lp = nan_interp(series.depth_lp)
+    n_samples = p_hp.size
+    if nperseg > n_samples:
+        raise ValueError("nperseg exceeds available samples")
+    if noverlap is None:
+        noverlap = nperseg // 2
+    if not 0 <= noverlap < nperseg:
+        raise ValueError("noverlap must satisfy 0 <= noverlap < nperseg")
+
+    fs = 1.0  # Hz
+    freqs, times_sec, Spp = spectrogram(
+        p_hp,
+        fs=fs,
+        window=window,
+        nperseg=nperseg,
+        noverlap=noverlap,
+        detrend=detrend,
+        scaling="density",
+        mode="psd",
+        boundary=None,
+        padded=False,
+    )
+    if Spp.size == 0:
+        raise RuntimeError("spectrogram returned empty PSD array")
+
+    omega = 2.0 * np.pi * freqs
+    seconds = np.asarray(series.seconds, dtype=np.float64)
+    time_int = series.time.astype("datetime64[ns]").astype("int64")
+
+    depth_interp = np.interp(times_sec, seconds, depth_lp)
+    time_ns = np.interp(times_sec, seconds, time_int)
+    time_centers = np.round(time_ns).astype("int64").astype("datetime64[ns]")
+
+    Setas = np.empty_like(Spp)
+    mask_total = freqs > 0.0
+    mask_ss = (freqs >= 0.05) & (freqs <= 0.33)
+    mask_ig = (freqs >= 0.004) & (freqs <= 0.04)
+
+    hs_total = []
+    hs_ss = []
+    hs_ig = []
+    tp_ss = []
+
+    for j, h_eff in enumerate(depth_interp):
+        k = wavenumber(omega, float(h_eff))
+        transfer = np.cosh(k * h_eff) / (RHO_SEAWATER * G)
+        Setas[:, j] = (transfer ** 2) * Spp[:, j]
+
+        spec = Setas[:, j]
+
+        def m0(mask: np.ndarray) -> float:
+            if not np.any(mask):
+                return 0.0
+            return float(np.trapz(spec[mask], freqs[mask]))
+
+        m0_total = m0(mask_total)
+        m0_ss = m0(mask_ss)
+        m0_ig = m0(mask_ig)
+
+        hs_total.append(4.0 * math.sqrt(max(m0_total, 0.0)))
+        hs_ss.append(4.0 * math.sqrt(max(m0_ss, 0.0)))
+        hs_ig.append(4.0 * math.sqrt(max(m0_ig, 0.0)))
+
+        if np.any(mask_ss):
+            ss_spec = spec[mask_ss]
+            if np.all(np.isfinite(ss_spec)) and np.nanmax(ss_spec) > 0.0:
+                fp = freqs[mask_ss][np.nanargmax(ss_spec)]
+                tp_ss.append(1.0 / fp if fp > 0.0 else np.nan)
+            else:
+                tp_ss.append(np.nan)
+        else:
+            tp_ss.append(np.nan)
+
+    return SpectralSummary(
+        freqs=freqs,
+        surface_spectra=Setas.T,
+        time_centers=time_centers,
         hs_total=np.array(hs_total),
         hs_sea_swell=np.array(hs_ss),
         hs_infragravity=np.array(hs_ig),
