@@ -7,6 +7,7 @@ import pandas as pd
 
 
 G = 9.81
+RHO_SEAWATER = 1025.0
 
 def wavenumber(omega: np.ndarray, depth: float, tol: float = 1e-12, max_iter: int = 64) -> np.ndarray:
     """Solve the linear dispersion relation for k(ω) using Newton's method"""
@@ -36,8 +37,82 @@ def wavenumber(omega: np.ndarray, depth: float, tol: float = 1e-12, max_iter: in
     return k
 
 
-def sig_wave_height(
+def Spp_to_Seta(
     Spp: np.ndarray,
+    freqs: np.ndarray,
+    t_spec: np.ndarray,
+    t1: np.ndarray,
+    h1: np.ndarray,
+    *,
+    depth_interp: np.ndarray | None = None,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Convert a pressure spectrogram into surface-elevation spectra.
+
+    Parameters
+    ----------
+    Spp : np.ndarray
+        Pressure power spectral density (Pa^2/Hz), shape (n_freqs, n_windows).
+    freqs : np.ndarray
+        Frequency vector [Hz] corresponding to the rows of ``Spp``.
+    t_spec : np.ndarray
+        Spectrogram time centers in seconds since the start of the record.
+    t1 : np.ndarray
+        Native time array (datetime64 or compatible) for the 1 Hz pressure record.
+    h1 : np.ndarray
+        Hydrostatic depth series (may include NaNs).
+    depth_interp : np.ndarray, optional
+        Pre-interpolated depth at 1 Hz. If omitted, a linear interpolation
+        (limit 20 samples) is performed internally.
+
+    Returns
+    -------
+    Seta : np.ndarray
+        Surface-elevation spectra (m^2/Hz), same shape as ``Spp``.
+    time_centers : np.ndarray
+        Datetime64[ns] array for the center of each spectrogram window.
+    depth_at_centers : np.ndarray
+        Depth used for each window (meters).
+    """
+    Spp = np.asarray(Spp, dtype=np.float64)
+    freqs = np.asarray(freqs, dtype=np.float64)
+    t_spec = np.asarray(t_spec, dtype=np.float64)
+    if Spp.ndim != 2:
+        raise ValueError("Spp must be 2-D (n_freqs, n_windows)")
+    if freqs.ndim != 1 or freqs.size != Spp.shape[0]:
+        raise ValueError("freqs must be 1-D and match the first dimension of Spp")
+
+    time_index = pd.to_datetime(t1)
+    if depth_interp is None:
+        depth_interp = (
+            pd.Series(h1, index=time_index)
+            .interpolate(method="linear", limit=20, limit_direction="both")
+            .to_numpy()
+        )
+    else:
+        depth_interp = np.asarray(depth_interp, dtype=np.float64)
+        if depth_interp.shape != h1.shape:
+            raise ValueError("depth_interp must match the shape of h1")
+
+    t0 = np.array(time_index[0], dtype="datetime64[ns]")
+    time_offsets = (t_spec * 1e9).astype("timedelta64[ns]")
+    time_centers = t0 + time_offsets
+
+    seconds_full = (time_index.to_numpy() - t0) / np.timedelta64(1, "s")
+    depth_at_centers = np.interp(t_spec, seconds_full, depth_interp)
+
+    omega = 2.0 * np.pi * freqs
+    Seta = np.empty_like(Spp, dtype=np.float64)
+    for col, depth_val in enumerate(depth_at_centers):
+        k = wavenumber(omega, float(depth_val))
+        transfer = np.cosh(k * depth_val) / (RHO_SEAWATER * G)
+        Seta[:, col] = (transfer ** 2) * Spp[:, col]
+
+    return Seta, time_centers, depth_at_centers
+
+
+def sig_wave_height(
+    Seta: np.ndarray,
     freqs: np.ndarray,
     t_spec: np.ndarray,
     t1: np.ndarray,
@@ -46,12 +121,12 @@ def sig_wave_height(
     depth_interp: np.ndarray | None = None,
     dataviz: bool = True,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Compute bulk wave statistics from a pressure spectrogram.
+    """Compute bulk wave statistics from a surface elevation spectrogram.
 
     Parameters
     ----------
-    Spp : np.ndarray
-        Pressure spectra (Pa^2/Hz) from ``scipy.signal.spectrogram`` with shape (n_freqs, n_windows).
+    Seta : np.ndarray
+        Surface elevation spectra (m^2/Hz) with shape (n_freqs, n_windows).
     freqs : np.ndarray
         Frequency vector corresponding to rows of ``Spp`` [Hz].
     t_spec : np.ndarray
@@ -97,13 +172,13 @@ def sig_wave_height(
     hs_ss: list[float] = []
     hs_ig: list[float] = []
     tp_ss: list[float] = []
-    Seta = np.empty_like(Spp)
+    hs_tot: list[float] = []
+    hs_ss: list[float] = []
+    hs_ig: list[float] = []
+    tp_ss: list[float] = []
 
     for col, depth_val in enumerate(depth_at_centers):
-        k = wavenumber(omega, float(depth_val))
-        transfer = np.cosh(k * depth_val) / (RHO * G)
-        seta = (transfer ** 2) * Spp[:, col]
-        Seta[:, col] = seta
+        seta = Seta[:, col]
 
         def spectral_moment(mask: np.ndarray) -> float:
             if not np.any(mask):
