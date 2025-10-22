@@ -1,75 +1,226 @@
 """
-Computation of wave setup at the reef face sensor using equation 4 in Becker(2014) "Water level effects on 
-breaking wave setup for Pacific Island fringing reefs".
+Wave setup  based on equation (4) in Becker (2014)
+-----------------------------------------------------------
 
-equation 4: eta_f = - (H_f^2 * k_f) / (8 sinh(2 * k_f * h_f) )
+eta_f = - (H_f^2 * k_f) / (8 * sinh(2 * k_f * h_f))
 
-Each variable is seperately computed as:
-
-H_f: rms wave height at reef face
-k_f: wavenumber at reef face
-h_f: mean water level at reef face
+This module provides helpers to derive each term from a surface-elevation
+spectrogram (`Seta`) together with the companion frequency and time axes.
 """
+
+from __future__ import annotations
+import math
+from typing import Iterable, Tuple
 import numpy as np
-from BulkWaveStats import sig_wave_height
+import pandas as pd
+try:  # pragma: no cover - xarray is optional
+    import xarray as xr
+except ImportError:  # pragma: no cover - fall back to pandas
+    xr = None
+from BulkWaveStats import sig_wave_height, wavenumber
 
 
-def H_f(Seta: np.ndarray,freqs: np.ndarray,t_spec: np.ndarray,t1: np.ndarray,h1: np.ndarray,bands: tuple[float, float],
+def _depth_at_centers(
+    t_spec: np.ndarray,
+    t1: np.ndarray,
+    h1: np.ndarray,
     *,
+    depth_interp: np.ndarray | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
-    ''' Return RMS wave height and matching time centers. Feelin a bit lazy so going to compute off of sig wave height function sig_wave_height.
-    Since Hs is 4 sqrt(sigma) so Hrms = sqrt(2)/2 * Hs
+    """Interpolate the depth record to the spectrogram time centres."""
+    time_index = pd.to_datetime(t1)
+    if depth_interp is None:
+        depth_interp = (
+            pd.Series(h1, index=time_index)
+            .interpolate(method="time", limit_direction="both")
+            .to_numpy()
+        )
+    else:
+        depth_interp = np.asarray(depth_interp, dtype=float)
+        if depth_interp.shape != np.asarray(h1).shape:
+            raise ValueError("depth_interp must match the shape of h1")
+
+    t0 = np.array(time_index[0], dtype="datetime64[ns]")
+    seconds_full = (time_index.to_numpy() - t0) / np.timedelta64(1, "s")
+    depth_at_centers = np.interp(t_spec, seconds_full, depth_interp)
+    time_centers = t0 + (t_spec * 1e9).astype("timedelta64[ns]")
+    return depth_at_centers, time_centers
+
+
+def _representative_frequency(
+    Seta: np.ndarray,
+    freqs: np.ndarray,
+    band: Tuple[float, float],
+) -> np.ndarray:
+    """Energy-weighted mean frequency inside `band` for each time slice."""
+    freqs = np.asarray(freqs, dtype=float)
+    Seta = np.asarray(Seta, dtype=float)
+    if Seta.shape[0] != freqs.size:
+        raise ValueError("Seta must have shape (n_freqs, n_windows)")
+
+    mask = (freqs >= band[0]) & (freqs <= band[1])
+    if not np.any(mask):
+        raise ValueError(f"Band {band} does not overlap provided frequencies")
+
+    freqs_band = freqs[mask]
+    spectra_band = Seta[mask, :]
+
+    # Zeroth and first spectral moments in the selected band.
+    m0 = np.trapz(spectra_band, freqs_band, axis=0)
+    m1 = np.trapz(spectra_band * freqs_band[:, None], freqs_band, axis=0)
+
+    freq_rep = np.divide(
+        m1,
+        m0,
+        out=np.zeros_like(m1, dtype=float),
+        where=m0 > 0.0,
+    )
+    return freq_rep
+
+
+def compute_hrms(
+    Seta: np.ndarray,
+    freqs: np.ndarray,
+    t_spec: np.ndarray,
+    t1: np.ndarray,
+    h1: np.ndarray,
+    band: Tuple[float, float],
+    *,
+    depth_interp: np.ndarray | None = None,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Convert the band-limited significant wave height to Hrms.
+    """
+    _, _, _, hs_band, _, time_centers = sig_wave_height(
+        Seta,
+        freqs,
+        t_spec,
+        t1,
+        h1,
+        band,
+        depth_interp=depth_interp,
+        dataviz=False,
+    )
+    hrms = 0.5 * math.sqrt(2.0) * hs_band
+    return hrms, time_centers
+
+
+def compute_kf(
+    freq_rep: np.ndarray,
+    depth_series: np.ndarray,
+) -> np.ndarray:
+    """
+    Solve the dispersion relation for each time slice.
+    """
+    freq_rep = np.asarray(freq_rep, dtype=float)
+    depth_series = np.asarray(depth_series, dtype=float)
+    if freq_rep.shape != depth_series.shape:
+        raise ValueError("freq_rep and depth_series must have the same shape")
+
+    k_vals = np.zeros_like(freq_rep, dtype=float)
+    omega_vals = 2.0 * np.pi * freq_rep
+    for idx, (omega, depth) in enumerate(zip(omega_vals, depth_series, strict=True)):
+        if omega <= 0.0 or depth <= 0.0:
+            k_vals[idx] = 0.0
+        else:
+            k_vals[idx] = wavenumber(np.array([omega]), float(depth))[0]
+    return k_vals
+
+
+def compute_eta_f(
+    Seta: np.ndarray,
+    freqs: np.ndarray,
+    t_spec: np.ndarray,
+    t1: np.ndarray,
+    h1: np.ndarray,
+    *,
+    band: Tuple[float, float] = (0.05, 0.33),
+    depth_interp: np.ndarray | None = None,
+    output: str = "xarray",
+):
+    """
+    Evaluate equation (4) from Becker (2014) for a given spectrogram.
 
     Parameters
     ----------
-    Seta : np.ndarray
-        Surface elevation spectra (m^2/Hz) with shape (n_freqs, n_windows).
-    freqs : np.ndarray
-        Frequency vector corresponding to rows of ``Spp`` [Hz].
-    t_spec : np.ndarray
-        Spectrogram time centers in seconds since the start of the record.
-    t1 : np.ndarray
-        Native datetime64 array for the 1 Hz series.
-    h1 : np.ndarray
-        Raw hydrostatic depth series (may contain NaNs).
-    band: list []
-        frequency band interested in integrated under
-
-    Returns
-    --------
+    Seta, freqs, t_spec, t1, h1
+        Surface elevation spectra and metadata produced by `Spp_to_Seta`.
+    band
+        Frequency interval [Hz] used to compute Hrms and representative
+        frequency. Defaults to the sea/swell band.
+    depth_interp
+        Optionally supply a pre-interpolated depth series to avoid repeating
+        the interpolation performed in other routines.
+    output
+        ``"xarray"`` (default) returns an ``xr.Dataset`` when xarray is
+        available. Set to ``"dataframe"`` to always receive a
+        ``pandas.DataFrame``.
+    """
+    hrms, time_centers = compute_hrms(
+        Seta,
+        freqs,
+        t_spec,
+        t1,
+        h1,
+        band,
+        depth_interp=depth_interp,
     )
-    H_f: np.ndarray
-        root mean square wave height 
-    '''
-    Hs_tot, Hs_ig, Hs_ss, Hs_input, Tp_ss, t_center = sig_wave_height(Seta, freqs, t_spec, t1, h1, bands)
-    Hrms = 0.5 * np.sqrt(2) * Hs_input
+    depth_at_centers, time_centers_check = _depth_at_centers(
+        t_spec,
+        t1,
+        h1,
+        depth_interp=depth_interp,
+    )
+    if not np.all(time_centers == time_centers_check):
+        # Align arrays if sig_wave_height and our interpolation applied
+        # slightly different rounding.
+        time_centers = time_centers_check
 
-    return Hrms, t_center
+    freq_rep = _representative_frequency(Seta, freqs, band)
+    k_vals = compute_kf(freq_rep, depth_at_centers)
 
-def wavenumber(omega: np.ndarray, depth: float, tol: float = 1e-12, max_iter: int = 64) -> np.ndarray:
-    """Solve the linear dispersion relation for k(ω) using Newton's method"""
-    G = 9.81
-    omega = np.asarray(omega, dtype=np.float64)
-    depth = float(depth)
-    k = np.zeros_like(omega)
-    if depth <= 0.0:
-        return k
-    mask = omega > 0.0
-    if not np.any(mask):
-        return k
-    k_mask = (omega[mask] ** 2) / G  # deep-water guess
-    for _ in range(max_iter):
-        kh = k_mask * depth
-        tanh_kh = np.tanh(kh)
-        cosh_kh = np.cosh(kh)
-        sech_kh_sq = 1.0 / (cosh_kh ** 2)
-        f = G * k_mask * tanh_kh - omega[mask] ** 2
-        df = G * tanh_kh + G * depth * k_mask * sech_kh_sq
-        step = np.divide(f, df, out=np.zeros_like(f), where=df != 0.0)
-        k_next = k_mask - step
-        if np.nanmax(np.abs(step)) < tol:
-            break
-        k_mask = np.where(np.isfinite(k_next), k_next, k_mask)
-    k[mask] = k_mask
-    return k
+    denominator = 8.0 * np.sinh(2.0 * k_vals * depth_at_centers)
+    eta_vals = np.full_like(hrms, np.nan, dtype=float)
+    mask = denominator != 0.0
+    eta_vals[mask] = -((hrms[mask] ** 2) * k_vals[mask]) / denominator[mask]
 
+    if output.lower() == "dataframe" or xr is None:
+        df = pd.DataFrame(
+            {
+                "eta_f": eta_vals,
+                "H_rms": hrms,
+                "k_f": k_vals,
+                "h_f": depth_at_centers,
+                "f_rep": freq_rep,
+            },
+            index=pd.to_datetime(time_centers),
+        )
+        df.index.name = "time"
+        df.attrs = {
+            "equation": "eta_f = -(H_f^2 k_f) / (8 sinh(2 k_f h_f))",
+            "band": band,
+        }
+        return df
+
+    dataset = xr.Dataset(
+        data_vars={
+            "eta_f": ("time", eta_vals),
+            "H_rms": ("time", hrms),
+            "k_f": ("time", k_vals),
+            "h_f": ("time", depth_at_centers),
+            "f": ("time", freq_rep),
+        },
+        coords={"time": pd.to_datetime(time_centers)},
+        attrs={
+            "equation": "eta_f = -(H_f^2 k_f) / (8 sinh(2 k_f h_f))",
+            "band": band,
+        },
+    )
+    return dataset
+
+
+__all__ = [
+    "compute_eta_f",
+    "compute_hrms",
+    "compute_kf",
+]
