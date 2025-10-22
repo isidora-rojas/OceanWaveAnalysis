@@ -117,6 +117,7 @@ def sig_wave_height(
     t_spec: np.ndarray,
     t1: np.ndarray,
     h1: np.ndarray,
+    bands,
     *,
     depth_interp: np.ndarray | None = None,
     dataviz: bool = True,
@@ -135,6 +136,8 @@ def sig_wave_height(
         Native datetime64 array for the 1 Hz series.
     h1 : np.ndarray
         Raw hydrostatic depth series (may contain NaNs).
+    bands : list
+        desired inputs of frequency bands to be integrated     
     depth_interp : np.ndarray, optional
         Pre-interpolated depth series matching ``h1`` (1 Hz). If not supplied, it is built via linear interpolation.
     dataviz : bool, optional
@@ -142,7 +145,7 @@ def sig_wave_height(
 
     Returns
     -------
-    hs_tot, hs_ig, hs_ss, tp_ss, time_centers : tuple of np.ndarray
+    hs_tot, hs_ig, hs_ss, hs_input, tp_ss, time_centers : tuple of np.ndarray
         Bulk metrics for each spectrogram window and the corresponding datetime64 centers.
     """
     RHO = 1025.0
@@ -165,17 +168,16 @@ def sig_wave_height(
     mask_total = freqs > 0.0
     mask_ss = (freqs >= 0.05) & (freqs <= 0.33)
     mask_ig = (freqs >= 0.004) & (freqs <= 0.04)
+    mask_input = (freqs >= bands[0]) & (freqs <= bands[1])
 
     omega = 2.0 * np.pi * freqs
 
     hs_tot: list[float] = []
     hs_ss: list[float] = []
     hs_ig: list[float] = []
+    hs_bands: list[float] = []
     tp_ss: list[float] = []
-    hs_tot: list[float] = []
-    hs_ss: list[float] = []
-    hs_ig: list[float] = []
-    tp_ss: list[float] = []
+
 
     for col, depth_val in enumerate(depth_at_centers):
         seta = Seta[:, col]
@@ -188,10 +190,12 @@ def sig_wave_height(
         m0_total = spectral_moment(mask_total)
         m0_sea_swell = spectral_moment(mask_ss)
         m0_ig = spectral_moment(mask_ig)
+        m0_input = spectral_moment(mask_input)
 
         hs_tot.append(4.0 * np.sqrt(max(m0_total, 0.0)))
         hs_ss.append(4.0 * np.sqrt(max(m0_sea_swell, 0.0)))
         hs_ig.append(4.0 * np.sqrt(max(m0_ig, 0.0)))
+        hs_bands.append(4.0 * np.sqrt(max(m0_input, 0.0)))
 
         if np.any(mask_ss):
             ss_slice = seta[mask_ss]
@@ -206,6 +210,7 @@ def sig_wave_height(
     hs_tot = np.asarray(hs_tot)
     hs_ss = np.asarray(hs_ss)
     hs_ig = np.asarray(hs_ig)
+    hs_bands = np.asarray(hs_bands)
     tp_ss = np.asarray(tp_ss)
 
     if dataviz:
@@ -215,100 +220,99 @@ def sig_wave_height(
         ax.plot(time_centers, hs_ss, label="Hs (sea/swell): 0.05–0.33 Hz")
         ax.set_ylabel("Significant wave height [m]")
         ax.set_xlabel("Date (local time)")
-        ax.set_title("Spectrogram-derived significant wave height")
+        ax.set_title("Zero-th Moment Derived significant wave height")
         ax.grid(True, alpha=0.3)
         ax.legend(loc="upper right")
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d"))
         fig.autofmt_xdate()
         plt.show()
 
-    return hs_tot, hs_ig, hs_ss, tp_ss, time_centers
+    return hs_tot, hs_ig, hs_ss, hs_bands, tp_ss, time_centers
+
+
+from utide import solve, reconstruct
 
 
 
+def detide(
+    p: np.ndarray,
+    t: np.ndarray,
+    LAT, 
+    avg = '15min'
+    ):
+
+    ''' Removes the tidal signal given a pressure/surface elevation/current array
+
+    Parameters
+    -----------------
+    p: ndarray
+        pressure/surface elevation/ current array
+    t: ndarray
+        time array
+    LAT: float
+        latitude of sensor
+    avg: string
+        time average needed. Becker (2014) computes 15 min averages
+
+    Returns
+    -------------
+    tide_full: ndarray
+        tidal signal
+    p_prime: ndarray
+        pressure from waves. That is, the full array with tide subtracted
+    p_full: ndarray
+        the original array with any NaNs interpolated
+
+    '''
 
 
+    LAT = LAT
 
+    idx_1hz = pd.to_datetime(t)
+    p_interp= (
+        pd.Series(p, index=idx_1hz)
+        .interpolate(method='linear', limit_direction='both')
+        .astype('float32') # make 32 bit to stop pooter from crashing
+    )   
 
-# def compute_spectrogram_summary(
-#     series: SensorSeries,
-#     *,
-#     nperseg: int = 8192,
-#     noverlap: int | None = None,
-#     window: str = "hann",
-#     detrend: str | None = "constant",
-# ) -> SpectralSummary:
-#     """
-#     Time-evolving autospectra using scipy.signal.spectrogram.
-#     Longer segment lengths (``nperseg``) push the frequency resolution to lower
-#     bands while retaining a rolling estimate of the sea/swell energy.
-#     """
-#     p_hp = nan_interp(series.pressure_hp)
-#     depth_lp = nan_interp(series.depth_lp)
-#     n_samples = p_hp.size
-#     if nperseg > n_samples:
-#         raise ValueError("nperseg exceeds available samples")
-#     if noverlap is None:
-#         noverlap = nperseg // 2
-#     if not 0 <= noverlap < nperseg:
-#         raise ValueError("noverlap must satisfy 0 <= noverlap < nperseg")
+    #  5min means to help with computation of tides
+    p_30 = p_interp.resample(avg).mean().dropna()
+    idx_30s = p_30.index
 
+    # tideal computation on 30s grid
+    coef = solve(
+        idx_30s.to_numpy(),
+        p_30.to_numpy(),
+        lat=LAT,
+        method="ols",
+        conf_int="linear", # 'none' skips uncertainty calc, 'linear' uses quick lin. estimate, 'MC' run monte-carlo (mad spendy)
+        nodal=True,
+        trend=True,
+        verbose=False)
 
-#     omega = 2.0 * np.pi * freqs
-#     seconds = np.asarray(series.seconds, dtype=np.float64)
-#     time_int = series.time.astype("datetime64[ns]").astype("int64")
+    # # Reconstruct on the 1 Hz grid (chunking to avoid crashes)
+    chunks = np.array_split(idx_1hz, 8)  # adjust slice count for memory
+    tide_parts = []
+    t0 = idx_1hz[0]
+    for chunk in chunks:
+        # chunk is a DatetimeIndex
+        recon_chunk = reconstruct(chunk.to_numpy(), coef)
+        tide_parts.append(pd.Series(recon_chunk.h.astype("float32"), index=chunk))
+    tide_full = pd.concat(tide_parts).sort_index()
+    p_wave = (p_interp - tide_full) # water level chane due to wave effects only
+    p_prime = p_wave.resample('1s').mean().dropna()
+    p_full = p_interp
 
-#     depth_interp = np.interp(times_sec, seconds, depth_lp)
-#     time_ns = np.interp(times_sec, seconds, time_int)
-#     time_centers = np.round(time_ns).astype("int64").astype("datetime64[ns]")
+    # # keep it on the averaged grid
+    # chunks = np.array_split(idx_30s, 8)  # adjust slice count for memory
+    # tide_parts = []
+    # t0 = idx_30s[0]
+    # for chunk in chunks:
+    #     # chunk is a DatetimeIndex
+    #     recon_chunk = reconstruct(chunk.to_numpy(), coef)
+    #     tide_parts.append(pd.Series(recon_chunk.h.astype("float32"), index=chunk))
+    # tide_full = pd.concat(tide_parts).sort_index()
+    # tide_full = tide_full.reindex(p_interp.index).interpolate("time")
 
-#     Setas = np.empty_like(Spp)
-#     mask_total = freqs > 0.0
-#     mask_ss = (freqs >= 0.05) & (freqs <= 0.33)
-#     mask_ig = (freqs >= 0.004) & (freqs <= 0.04)
-
-#     hs_total = []
-#     hs_ss = []
-#     hs_ig = []
-#     tp_ss = []
-
-#     for j, h_eff in enumerate(depth_interp):
-#         k = wavenumber(omega, float(h_eff))
-#         transfer = np.cosh(k * h_eff) / (RHO_SEAWATER * G)
-#         Setas[:, j] = (transfer ** 2) * Spp[:, j]
-
-#         spec = Setas[:, j]
-
-#         def m0(mask: np.ndarray) -> float:
-#             if not np.any(mask):
-#                 return 0.0
-#             return float(np.trapz(spec[mask], freqs[mask]))
-
-#         m0_total = m0(mask_total)
-#         m0_ss = m0(mask_ss)
-#         m0_ig = m0(mask_ig)
-
-#         hs_total.append(4.0 * math.sqrt(max(m0_total, 0.0)))
-#         hs_ss.append(4.0 * math.sqrt(max(m0_ss, 0.0)))
-#         hs_ig.append(4.0 * math.sqrt(max(m0_ig, 0.0)))
-
-#         if np.any(mask_ss):
-#             ss_spec = spec[mask_ss]
-#             if np.all(np.isfinite(ss_spec)) and np.nanmax(ss_spec) > 0.0:
-#                 fp = freqs[mask_ss][np.nanargmax(ss_spec)]
-#                 tp_ss.append(1.0 / fp if fp > 0.0 else np.nan)
-#             else:
-#                 tp_ss.append(np.nan)
-#         else:
-#             tp_ss.append(np.nan)
-
-#     return SpectralSummary(
-#         freqs=freqs,
-#         surface_spectra=Setas.T,
-#         time_centers=time_centers,
-#         hs_total=np.array(hs_total),
-#         hs_sea_swell=np.array(hs_ss),
-#         hs_infragravity=np.array(hs_ig),
-#         tp_sea_swell=np.array(tp_ss),
-#     )
-3
+    # p_prime = (p_interp - tide_full) # water level chane due to wave effects only
+    return tide_full, p_prime, p_interp

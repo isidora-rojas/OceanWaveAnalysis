@@ -1,1 +1,3 @@
-printf "*.mat\n*.pdf\n" >> .gitignore
+*.mat
+*.pdf
+mokuleia/data/
