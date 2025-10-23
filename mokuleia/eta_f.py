@@ -50,7 +50,7 @@ def _depth_at_centers(
 def _representative_frequency(
     Seta: np.ndarray,
     freqs: np.ndarray,
-    band: Tuple[float, float],
+    band: tuple[float, float],
 ) -> np.ndarray:
     """Energy-weighted mean frequency inside `band` for each time slice."""
     freqs = np.asarray(freqs, dtype=float)
@@ -65,16 +65,18 @@ def _representative_frequency(
     freqs_band = freqs[mask]
     spectra_band = Seta[mask, :]
 
+    is_finite = np.isfinite(spectra_band)
+    valid_cols = np.any(is_finite, axis=0)
+
+    spectra_band = np.where(is_finite, spectra_band, 0.0)
+
     # Zeroth and first spectral moments in the selected band.
     m0 = np.trapz(spectra_band, freqs_band, axis=0)
     m1 = np.trapz(spectra_band * freqs_band[:, None], freqs_band, axis=0)
 
-    freq_rep = np.divide(
-        m1,
-        m0,
-        out=np.zeros_like(m1, dtype=float),
-        where=m0 > 0.0,
-    )
+    freq_rep = np.full(m0.shape, np.nan, dtype=float)
+    positive = (m0 > 0.0) & valid_cols
+    freq_rep[positive] = m1[positive] / m0[positive]
     return freq_rep
 
 
@@ -84,7 +86,7 @@ def compute_hrms(
     t_spec: np.ndarray,
     t1: np.ndarray,
     h1: np.ndarray,
-    band: Tuple[float, float],
+    band: tuple[float, float],
     *,
     depth_interp: np.ndarray | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -111,20 +113,30 @@ def compute_kf(
 ) -> np.ndarray:
     """
     Solve the dispersion relation for each time slice.
+
+    Parameters
+    ---------------
+    freq_rep: np.ndarray
+        median frequency array for each time slice
+    depth_series: np.ndarray
+        !!MUST BE POSITIVE VALUES!!
     """
     freq_rep = np.asarray(freq_rep, dtype=float)
     depth_series = np.asarray(depth_series, dtype=float)
-    if freq_rep.shape != depth_series.shape:
-        raise ValueError("freq_rep and depth_series must have the same shape")
 
     k_vals = np.zeros_like(freq_rep, dtype=float)
     omega_vals = 2.0 * np.pi * freq_rep
+
+    
+
     for idx, (omega, depth) in enumerate(zip(omega_vals, depth_series, strict=True)):
-        if omega <= 0.0 or depth <= 0.0:
-            k_vals[idx] = 0.0
+        if omega <= 0.0 or depth <= 0.0 or not np.isfinite(omega) or not np.isfinite(depth):
+            k_vals[idx] = np.nan
+            print('There are negative values in the input arrays.')
         else:
             k_vals[idx] = wavenumber(np.array([omega]), float(depth))[0]
     return k_vals
+
 
 
 def compute_eta_f(
@@ -181,7 +193,7 @@ def compute_eta_f(
 
     denominator = 8.0 * np.sinh(2.0 * k_vals * depth_at_centers)
     eta_vals = np.full_like(hrms, np.nan, dtype=float)
-    mask = denominator != 0.0
+    mask = (denominator != 0.0) & np.isfinite(k_vals) & np.isfinite(hrms)
     eta_vals[mask] = -((hrms[mask] ** 2) * k_vals[mask]) / denominator[mask]
 
     if output.lower() == "dataframe" or xr is None:
@@ -208,7 +220,7 @@ def compute_eta_f(
             "H_rms": ("time", hrms),
             "k_f": ("time", k_vals),
             "h_f": ("time", depth_at_centers),
-            "f": ("time", freq_rep),
+            "f_rep": ("time", freq_rep),
         },
         coords={"time": pd.to_datetime(time_centers)},
         attrs={
