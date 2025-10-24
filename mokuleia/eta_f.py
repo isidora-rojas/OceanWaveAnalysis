@@ -1,5 +1,5 @@
 """
-Wave setup  based on equation (4) in Becker (2014)
+Wave setdown at reef face based on equation (4) in Becker (2014)
 -----------------------------------------------------------
 
 eta_f = - (H_f^2 * k_f) / (8 * sinh(2 * k_f * h_f))
