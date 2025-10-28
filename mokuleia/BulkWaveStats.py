@@ -9,6 +9,34 @@ import pandas as pd
 G = 9.81
 RHO_SEAWATER = 1025.0
 
+
+def _tspec_to_seconds_and_centers(t_spec, t1):
+    """Normalize t_spec input.
+
+    Accepts either:
+    - numeric seconds offsets (array-like), or
+    - datetime-like array of absolute times (datetime64 or pandas.Timestamp).
+
+    Returns (t_spec_seconds, time_centers, t0) where:
+    - t_spec_seconds: numpy float array of seconds since t0
+    - time_centers: numpy datetime64[ns] array of absolute times for each window
+    - t0: numpy datetime64[ns] scalar representing the reference start time
+    """
+    # make numpy array without forcing numeric dtype yet
+    arr = np.asarray(t_spec)
+    t0 = np.array(pd.to_datetime(t1[0]), dtype="datetime64[ns]")
+    if np.issubdtype(arr.dtype, np.datetime64):
+        # t_spec already absolute datetimes -> compute seconds since t0
+        t_spec_dt = np.asarray(pd.to_datetime(arr), dtype="datetime64[ns]")
+        time_centers = t_spec_dt
+        t_spec_seconds = ((t_spec_dt - t0) / np.timedelta64(1, "s")).astype(float)
+    else:
+        # assume numeric seconds offsets
+        t_spec_seconds = np.asarray(arr, dtype=float)
+        time_offsets = (t_spec_seconds * 1e9).astype("timedelta64[ns]")
+        time_centers = t0 + time_offsets
+    return t_spec_seconds, time_centers, t0
+
 def wavenumber(omega: np.ndarray, depth: float, tol: float = 1e-12, max_iter: int = 64) -> np.ndarray:
     """Solve the linear dispersion relation for k(ω) using Newton's method"""
     G = 9.81
@@ -76,7 +104,8 @@ def Spp_to_Seta(
     """
     Spp = np.asarray(Spp, dtype=np.float64)
     freqs = np.asarray(freqs, dtype=np.float64)
-    t_spec = np.asarray(t_spec, dtype=np.float64)
+    # accept either seconds offsets or datetime-like t_spec
+    t_spec_seconds, time_centers, t0 = _tspec_to_seconds_and_centers(t_spec, t1)
     if Spp.ndim != 2:
         raise ValueError("Spp must be 2-D (n_freqs, n_windows)")
     if freqs.ndim != 1 or freqs.size != Spp.shape[0]:
@@ -94,12 +123,8 @@ def Spp_to_Seta(
         if depth_interp.shape != h1.shape:
             raise ValueError("depth_interp must match the shape of h1")
 
-    t0 = np.array(time_index[0], dtype="datetime64[ns]")
-    time_offsets = (t_spec * 1e9).astype("timedelta64[ns]")
-    time_centers = t0 + time_offsets
-
     seconds_full = (time_index.to_numpy() - t0) / np.timedelta64(1, "s")
-    depth_at_centers = np.interp(t_spec, seconds_full, depth_interp)
+    depth_at_centers = np.interp(t_spec_seconds, seconds_full, depth_interp)
 
     omega = 2.0 * np.pi * freqs
     Seta = np.empty_like(Spp, dtype=np.float64)
@@ -157,13 +182,10 @@ def sig_wave_height(
             .to_numpy()
         )
 
-    # spectrogram centers as datetime64
-    t0 = np.array(t1[0], dtype="datetime64[ns]")
-    time_offsets = (t_spec * 1e9).astype("timedelta64[ns]")
-    time_centers = t0 + time_offsets
-
+    # spectrogram centers as datetime64 and seconds offsets for interpolation
+    t_spec_seconds, time_centers, t0 = _tspec_to_seconds_and_centers(t_spec, t1)
     seconds_full = (t1 - t1[0]) / np.timedelta64(1, "s")
-    depth_at_centers = np.interp(t_spec, seconds_full, depth_interp)
+    depth_at_centers = np.interp(t_spec_seconds, seconds_full, depth_interp)
 
     mask_total = freqs > 0.0
     mask_ss = (freqs >= 0.05) & (freqs <= 0.33)
