@@ -56,7 +56,7 @@ def loadPressureData(
     matlab_time = tclip[0, 0] + seconds / SECONDS_PER_DAY
     dt = matlab_datenum_to_datetime64(matlab_time)
 
-    # ✅ Return a tidy DataFrame
+    # Return a tidy DataFrame
     df = pd.DataFrame(
         {"pressure_pa": pressure_pa,
          "h": depth_m},

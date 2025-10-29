@@ -116,89 +116,69 @@ def _compute_kf(
             k_vals[i] = wavenumber(np.array([om], dtype=float), float(depth))[0]
     return k_vals
 
+ ## ------------------------ main function ------------------------ ##
 
-# ------------------------- public API --------------------------
 
-def compute_eta_f(
-    Seta,
-    freqs: np.ndarray,
-    t_eta: np.ndarray,
-    h_eta: np.ndarray,
+
+def compute_eta_f_xr(
+    ds: xr.Dataset,
     *,
+    seta_var: str = "Seta",
+    depth_var: str = "h_mean",
+    freq_coord: str = "freq",
+    time_coord: str = "time",
     band: tuple[float, float] = (0.05, 0.33),
-    output: str = "xarray",
-):
+    attach: bool = True,
+) -> xr.Dataset:
     """
-    Evaluate Becker (2014) Eq. (4) using Seta, freqs, t_eta, and h_eta (+band).
+    Becker (2014) Eq. (4) from an xarray Dataset with Seta(freq,time) and depth(time).
 
     Parameters
     ----------
-    Seta : (n_freqs, n_times) ndarray or xarray.DataArray
-    freqs : (n_freqs,) array-like [Hz]
-    t_eta : (n_times,) array-like (datetime-like or numeric)
-    h_eta : (n_times,) array-like [m, positive]
-    band : (float, float), optional
-    output : {"xarray","dataframe"}
+    ds : xr.Dataset
+        Must contain:
+          - ds[seta_var] with dims (freq,time)
+          - ds[depth_var] with dim (time), positive-down depth (m)
+          - coords ds[freq_coord] [Hz], ds[time_coord]
+    band : (fmin, fmax) Hz
+    attach : if True, returns ds merged with new variables; else returns only results.
 
     Returns
     -------
-    xr.Dataset or pandas.DataFrame with variables:
-        eta_f, H_rms, k_f, h_f, f_rep (indexed by time)
+    xr.Dataset with variables on `time`:
+        eta_f, H_rms, k_f, h_f, f_rep
     """
-    arr = _as_2d_array(Seta)             # (n_freqs, n_times)
-    f = np.asarray(freqs, dtype=float)   # (n_freqs,)
-    t = np.asarray(t_eta)
-    h = np.asarray(h_eta, dtype=float)
+    Seta = ds[seta_var].transpose(freq_coord, time_coord).values  # (nf, nt)
+    freqs = ds[freq_coord].values
+    time = pd.to_datetime(ds[time_coord].values)
+    h = np.abs(ds[depth_var].values)  # enforce positive depths
 
-    if arr.shape[0] != f.size:
-        raise ValueError("len(freqs) must match Seta.shape[0] (n_freqs).")
-    if arr.shape[1] != t.size or t.size != h.size:
-        raise ValueError("Seta.shape[1], len(t_eta), and len(h_eta) must all match (n_times).")
+    # computations
+    Hrms = _hrms_from_seta(Seta, freqs, band)                  # (nt,)
+    f_rep = _representative_frequency(Seta, freqs, band)       # (nt,)
+    k_f  = _compute_kf(f_rep, h)                               # (nt,)
 
-    # core calculations
-    Hrms = _hrms_from_seta(arr, f, band)                # (n_times,)
-    f_rep = _representative_frequency(arr, f, band)     # (n_times,)
-    k_vals = _compute_kf(f_rep, h)                      # (n_times,)
+    denom = 8.0 * np.sinh(2.0 * k_f * h)
+    eta_f = np.full_like(Hrms, np.nan, dtype=float)
+    good = (denom != 0.0) & np.isfinite(k_f) & np.isfinite(Hrms) & np.isfinite(h)
+    eta_f[good] = -((Hrms[good] ** 2) * k_f[good]) / denom[good]
 
-    # eta_f = -(Hrms^2 * k) / (8 * sinh(2 k h))
-    denom = 8.0 * np.sinh(2.0 * k_vals * h)
-    eta_vals = np.full_like(Hrms, np.nan, dtype=float)
-    good = (denom != 0.0) & np.isfinite(k_vals) & np.isfinite(Hrms) & np.isfinite(h)
-    eta_vals[good] = -((Hrms[good] ** 2) * k_vals[good]) / denom[good]
-
-    # package results
-    time_index = pd.to_datetime(t)
-
-    attrs = {
-        "equation": "eta_f = -(H_f^2 k_f) / (8 sinh(2 k_f h_f))",
-        "band": tuple(float(x) for x in band),
-        "freq_units": "Hz",
-        "depth_units": "m (positive downward)",
-        "Seta_units": "m^2/Hz",
-        "notes": "Hrms from band-limited m0; f_rep is energy-weighted mean frequency in band.",
-    }
-
-    if output.lower() == "dataframe" or xr is None:
-        df = pd.DataFrame(
-            {"eta_f": eta_vals, "H_rms": Hrms, "k_f": k_vals, "h_f": h, "f_rep": f_rep},
-            index=time_index,
-        )
-        df.index.name = "time"
-        df.attrs = attrs
-        return df
-
-    ds = xr.Dataset(
+    out = xr.Dataset(
         data_vars={
-            "eta_f": ("time", eta_vals),
+            "eta_f": ("time", eta_f),
             "H_rms": ("time", Hrms),
-            "k_f": ("time", k_vals),
-            "h_f": ("time", h),
+            "k_f":   ("time", k_f),
+            "h_f":   ("time", h),
             "f_rep": ("time", f_rep),
         },
-        coords={"time": time_index},
-        attrs=attrs,
+        coords={"time": ("time", time)},
+        attrs={
+            "equation": "eta_f = -(H_f^2 k_f) / (8 sinh(2 k_f h_f))",
+            "band": tuple(float(x) for x in band),
+            "freq_units": "Hz",
+            "depth_units": "m (+down)",
+            "Seta_units": "m^2/Hz",
+        },
     )
-    return ds
 
-
-__all__ = ["compute_eta_f"]
+    return xr.merge([ds, out]) if attach else out
