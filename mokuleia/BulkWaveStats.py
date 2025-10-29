@@ -338,3 +338,6 @@ def detide(
 
     # p_prime = (p_interp - tide_full) # water level chane due to wave effects only
     return tide_full, p_prime, p_interp
+
+
+
