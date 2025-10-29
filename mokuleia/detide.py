@@ -1,77 +1,73 @@
-''' This code is used to detide pressure/surface elevation/ current data using the UTide package '''
-
 from utide import solve, reconstruct
 import numpy as np
 import pandas as pd
 
+def detide_df(
+    df: pd.DataFrame,
+    col: str,
+    lat: float,
+    *,
+    avg: str = "15min",         # Becker(2014) style
+    chunks: int = 8,            # chunked reconstruct to save RAM
+    out_prefix: str = None,     # default = col name
+    inplace: bool = False,      # write into df or return a copy
+):
+    """
+    Detide a DataFrame column using UTide.
+    
+    Adds three columns:
+      <prefix>_tide     : tidal signal reconstructed on 1 Hz (or native) grid
+      <prefix>_interp   : original series linearly interpolated (float32)
+      <prefix>_detided  : <prefix>_interp - <prefix>_tide (wave-only signal)
 
+    Requirements
+    ------------
+    - df.index must be a DatetimeIndex at (about) 1 Hz (or at least regular).
+    - df[col] is the pressure / surface elevation / current to detide.
+    """
+    if out_prefix is None:
+        out_prefix = col
 
-def detide(
-    p: np.ndarray,
-    t: np.ndarray,
-    LAT, 
-    avg = '15min'
-    ):
+    target = df if inplace else df.copy()
 
-    ''' Removes the tidal signal given a pressure/surface elevation/current array. Averages are computed over specifief time windows. This
-    is necessary because the computation can be computationally expensive for longer time series. 
+    # --- 1) Coerce to float32 & fill small gaps (linear)
+    if not isinstance(target.index, pd.DatetimeIndex):
+        raise TypeError("detide_df: DataFrame index must be a DatetimeIndex.")
+    s = target[col].astype("float32")
+    s_interp = (
+        s.reindex(pd.DatetimeIndex(target.index))  # ensure proper index dtype
+         .interpolate(method="time", limit_direction="both")
+         .astype("float32")
+    )
 
-    Parameters
-    -----------------
-    p: ndarray
-        pressure/surface elevation/ current array
-    t: ndarray
-        time array
-    LAT: float
-        latitude of sensor
-    avg: string
-        time average needed. Becker (2014) computes 15 min averages
+    # --- 2) Fit UTide on downsampled means (to keep it fast/stable)
+    s_mean = s_interp.resample(avg).mean().dropna()
+    t_mean = s_mean.index.to_numpy()
 
-    Returns
-    -------------
-    tide_full: ndarray
-        tidal signal
-    p_prime: ndarray
-        pressure from waves. That is, the full array with tide subtracted
-    p_full: ndarray
-        the original array with any NaNs interpolated
-
-    '''
-
-
-    LAT = LAT
-
-    idx_1hz = pd.to_datetime(t)
-    p_interp= (
-        pd.Series(p, index=idx_1hz)
-        .interpolate(method='linear', limit_direction='both')
-        .astype('float32') # make 32 bit to stop pooter from crashing
-    )   
-
-    #  15min means to help with computation of tides
-    pmean = p_interp.resample(avg).mean().dropna()
-    idx_mean = pmean.index
-
-    # tideal computation on 30s grid
     coef = solve(
-        idx_mean.to_numpy(),
-        pmean.to_numpy(),
-        lat=LAT,
+        t_mean,
+        s_mean.to_numpy(),
+        lat=lat,
         method="ols",
-        conf_int="linear", # 'none' skips uncertainty calc, 'linear' uses quick lin. estimate, 'MC' run monte-carlo (mad spendy)
+        conf_int="linear",
         nodal=True,
         trend=True,
-        verbose=False)
+        verbose=False,
+    )
 
-    # # Reconstruct on the 1 Hz grid (chunking to avoid crashes)
-    chunks = np.array_split(idx_1hz, 8)  # adjust slice count for memory
-    tide_parts = []
-    for chunk in chunks:
-        # chunk is a DatetimeIndex
-        recon_chunk = reconstruct(chunk.to_numpy(), coef)
-        tide_parts.append(pd.Series(recon_chunk.h.astype("float32"), index=chunk))
-    tide_full = pd.concat(tide_parts).sort_index()
-    p_wave = (p_interp - tide_full) # water level chane due to wave effects only
-    p_detide = p_wave.resample('1s').mean().dropna()
+    # --- 3) Reconstruct on full grid in chunks (avoid memory spikes)
+    t_full = target.index
+    parts = []
+    for chunk in np.array_split(t_full, chunks):
+        if len(chunk) == 0:
+            continue
+        rc = reconstruct(chunk.to_numpy(), coef)
+        parts.append(pd.Series(rc.h.astype("float32"), index=chunk))
+    tide_full = pd.concat(parts).sort_index()
 
-    return tide_full, p_detide, p_interp
+    # --- 4) Assemble outputs
+    target[f"{out_prefix}_interp"]  = s_interp
+    target[f"{out_prefix}_tide"]    = tide_full
+    target[f"{out_prefix}_detided"] = (s_interp - tide_full).astype("float32")
+
+    return target
