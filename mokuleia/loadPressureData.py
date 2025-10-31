@@ -4,178 +4,134 @@ import pandas as pd
 from scipy.io import loadmat
 
 # --- constants ---
-PSI_TO_PA   = 6894.757293168     # 1 psi  -> Pa
-DBAR_TO_PA  = 1e4                # 1 dbar -> Pa
-MATLAB_EPOCH_OFFSET = 719529.0   # days between 0000-01-01 and 1970-01-01
+PSI_TO_PA   = 6894.757293168   # 1 psi  -> Pa
+DBAR_TO_PA  = 1e4              # 1 dbar -> Pa
+MATLAB_EPOCH_OFFSET = 719529.0 # days between 0000-01-01 and 1970-01-01
 SECONDS_PER_DAY     = 86400.0
 
 def matlab_datenum_to_datetime64(tnums):
     """
-    Convert MATLAB datenum(s) to numpy datetime64[ns].
+    Convert MATLAB datenums to numpy datetime64[ns], preserving NaT for gaps.
     """
-    tnums = np.asarray(tnums, dtype=np.float64)
-    delta_days = tnums - MATLAB_EPOCH_OFFSET
-    ns_since_unix = np.round(delta_days * SECONDS_PER_DAY * 1e9).astype("int64")
-    return np.datetime64("1970-01-01") + ns_since_unix.astype("timedelta64[ns]")
-
-def _normalize_burst_starts(tclip, nsamp, nburst):
-    """
-    Return a 1D array of length nburst with MATLAB datenum start times per burst.
-    Accepts:
-      - scalar (same start for all bursts)
-      - (nburst,), (1, nburst), (nburst, 1)
-      - (nsamp, nburst)  -> uses the first sample of each burst as its start
-    """
-    tc = np.asarray(tclip, dtype=float)
-
-    # If nothing usable, bail early with a clear error
-    if tc.size == 0:
-        raise ValueError("tclip is empty; cannot construct time index.")
-
-    # Scalar -> broadcast to all bursts
-    if tc.size == 1:
-        return np.full(nburst, float(np.squeeze(tc)))
-
-    # 1-D vector length nburst
-    if tc.ndim == 1 and tc.shape[0] == nburst:
-        return tc.astype(float)
-
-    # 2-D forms with a single row/col that flatten to length nburst
-    if tc.ndim == 2 and 1 in tc.shape and max(tc.shape) == nburst:
-        return tc.reshape(nburst).astype(float)
-
-    # Full per-sample times: (nsamp, nburst) -> take first sample as burst start
-    if tc.ndim == 2 and tc.shape == (nsamp, nburst):
-        return tc[0, :].astype(float)
-
-    raise ValueError(
-        f"Unrecognized tclip shape {tc.shape}; expected scalar, "
-        f"(nburst,), (1,nburst), (nburst,1), or (nsamp,nburst)."
-    )
+    t = np.asarray(tnums, dtype=np.float64)
+    out = np.full(t.shape, np.datetime64("NaT"), dtype="datetime64[ns]")
+    mask = np.isfinite(t)
+    if mask.any():
+        sec = (t[mask] - MATLAB_EPOCH_OFFSET) * SECONDS_PER_DAY
+        ns  = np.round(sec * 1e9).astype("int64")
+        out[mask] = np.datetime64("1970-01-01") + ns.astype("timedelta64[ns]")
+    return out
 
 def loadPressureData(
     mat_path: Path,
     *,
-    sample_rate_hz: float = 1.0,      # samples per second within each burst
-    gap_seconds: float = 20.0,        # seconds of gap to insert between bursts
-    units: str = "psi",               # "psi", "dbar", or "pa"
-    is_gauge: bool = False,           # True if pclip already has atmosphere removed
-    patm_psi: float = 14.6959,        # local atmospheric pressure [psi] for absolute psi
-    patm_dbar: float = 10.1325,       # local atmospheric pressure [dbar] for absolute dbar
-    patm_pa: float = 101325.0,        # local atmospheric pressure [Pa]  for absolute Pa
-    rho: float = 1025.0,              # seawater density [kg/m^3]
-    gravity: float = 9.81,            # gravitational acceleration [m/s^2]
-    clip_negative_gauge: bool = True  # clip tiny negative gauge pressures to 0 Pa
+    sample_rate_hz: float = 1.0,    # native samples per second (used when we synthesize time)
+    gap_seconds: float = 20.0,      # NaN gap inserted between bursts (only if we synthesize time)
+    units: str = "psi",             # "psi", "dbar", or "pa"
+    is_gauge: bool = False,         # True if pclip already has atmosphere removed
+    patm_psi: float = 14.7,         # local atmospheric pressure [psi] for absolute psi
+    patm_dbar: float = 10.1325,     # local atmospheric pressure [dbar] for absolute dbar
+    patm_pa: float = 101325.0,      # local atmospheric pressure [Pa]  for absolute Pa
+    rho: float = 1025.0,            # seawater density [kg/m^3]
+    gravity: float = 9.81,          # gravitational acceleration [m/s^2]
 ) -> pd.DataFrame:
     """
-    Load bursty pressure data from a MATLAB file and return a continuous time series.
+    Minimal burst loader for MATLAB files with 'pclip' and 'tclip'.
+    Handles tclip as:
+      - scalar (same start for all bursts),
+      - per-burst vector (length nburst, or 1 x nburst / nburst x 1),
+      - full per-sample times (nsamp x nburst).
 
-    Expects .mat to contain:
-      - pclip : (nsamp, nburst) pressure in 'units'
-      - tclip : scalar, (nburst,), (1,nburst), (nburst,1), or (nsamp,nburst)
-                representing burst start time(s) or full per-sample times (MATLAB datenum)
-
-    Returns a DataFrame with datetime index and columns:
-      - pressure_raw         : raw pressure in original 'units'
-      - pressure_gauge_pa    : gauge pressure in Pa (>=0 if clipping enabled)
-      - h                    : hydrostatic depth (m) = pressure_gauge_pa / (rho*g)
+    Returns a DataFrame with DatetimeIndex and columns:
+      - p_raw : raw pressure in original 'units'
+      - p     : gauge pressure in Pa
+      - h     : hydrostatic depth (m) = p / (rho * g)
     """
-    # --- load from .mat ---
+    # --- load variables ---
     data = loadmat(mat_path)
     if "pclip" not in data or "tclip" not in data:
-        raise KeyError("Input .mat must contain 'pclip' and 'tclip' variables.")
+        raise KeyError("MAT file must contain 'pclip' and 'tclip' variables.")
 
-    pclip = np.asarray(data["pclip"], dtype=float)   # (nsamp, nburst)
-    tclip = np.asarray(data["tclip"], dtype=float)   # various shapes
+    pclip = np.asarray(data["pclip"], dtype=float)  # (nsamp, nburst)
+    tclip = np.asarray(data["tclip"], dtype=float)  # scalar, (nburst,), or (nsamp, nburst)
     if pclip.ndim != 2:
-        raise ValueError(f"pclip must be 2-D (nsamp, nburst); got shape {pclip.shape}")
-
+        raise ValueError(f"pclip must be 2-D (nsamp, nburst); got {pclip.shape}")
     nsamp, nburst = pclip.shape
 
-    # --- choose atmospheric pressure in incoming units and convert to Pa ---
+    # --- convert to gauge pressure in Pa based on units ---
     u = units.lower()
     if u == "psi":
         patm_in = 0.0 if is_gauge else float(patm_psi)
-        p_gauge_pa = (pclip - patm_in) * PSI_TO_PA
+        p_pa = (pclip - patm_in) * PSI_TO_PA
     elif u == "dbar":
         patm_in = 0.0 if is_gauge else float(patm_dbar)
-        p_gauge_pa = (pclip - patm_in) * DBAR_TO_PA
+        p_pa = (pclip - patm_in) * DBAR_TO_PA
     elif u == "pa":
         patm_in = 0.0 if is_gauge else float(patm_pa)
-        p_gauge_pa = (pclip - patm_in)
+        p_pa = (pclip - patm_in)
     else:
         raise ValueError("units must be one of {'psi','dbar','pa'}")
 
-    if clip_negative_gauge:
-        p_gauge_pa = np.maximum(p_gauge_pa, 0.0)
+    # --- hydrostatic depth (m) ---
+    h_bursty = p_pa / (rho * gravity)
 
-    # --- hydrostatic depth (water column above the transducer) ---
-    depth_m_bursty = p_gauge_pa / (rho * gravity)  # (nsamp, nburst)
+    # --- CASE A: tclip gives full per-sample timestamps (nsamp, nburst) ---
+    if tclip.ndim == 2 and tclip.shape == (nsamp, nburst):
+        # Flatten time and data burst-by-burst (Fortran order)
+        matlab_time = tclip.reshape(-1, order="F")
+        p_raw = pclip.reshape(-1, order="F")
+        p     = p_pa.reshape(-1,  order="F")
+        h     = h_bursty.reshape(-1, order="F")
 
-    # --- stitch bursts with NaN gaps (column-major, to preserve within-burst order) ---
+        # Convert time (gaps already implicit in timestamps; no synthetic NaNs needed)
+        dt = matlab_datenum_to_datetime64(matlab_time)
+
+        df = pd.DataFrame({"p_raw": p_raw, "p": p, "h": h},
+                          index=pd.to_datetime(dt))
+        return df
+
+    # --- CASE B: tclip is scalar or per-burst; we synthesize per-sample time and insert NaN gaps ---
+    # Normalize to a 1-D vector of length nburst with MATLAB datenums
+    tvec = np.squeeze(tclip)
+    if tvec.size == 1:
+        burst_starts = np.full(nburst, float(tvec))
+    else:
+        burst_starts = np.asarray(tvec, dtype=float).reshape(-1)
+        if burst_starts.size != nburst:
+            raise ValueError("tclip must be scalar, length nburst, or (nsamp, nburst).")
+
+    # Gap handling and stacking
     gap_samples = int(round(gap_seconds * sample_rate_hz))
-    block_len = nsamp + (gap_samples if gap_samples > 0 else 0)
+    block_len   = nsamp + (gap_samples if gap_samples > 0 else 0)
 
-    # Prepare containers (raw in original units; gauge in Pa; depth in m)
+    # Stack data with NaN gap rows between bursts
     stacked_raw = np.full((block_len, nburst), np.nan)
-    stacked_gpa = np.full((block_len, nburst), np.nan)
+    stacked_p   = np.full((block_len, nburst), np.nan)
     stacked_h   = np.full((block_len, nburst), np.nan)
-
     stacked_raw[:nsamp, :] = pclip
-    stacked_gpa[:nsamp, :] = p_gauge_pa
-    stacked_h[:nsamp,   :] = depth_m_bursty
+    stacked_p[:nsamp,   :] = p_pa
+    stacked_h[:nsamp,   :] = h_bursty
 
-    # Flatten in Fortran order to match burst sequencing
-    pressure_raw      = stacked_raw.reshape(-1, order="F")
-    pressure_gauge_pa = stacked_gpa.reshape(-1, order="F")
-    depth_m           = stacked_h.reshape(-1, order="F")
-
-    # Drop the trailing gap after the last burst
+    p_raw = stacked_raw.reshape(-1, order="F")
+    p     = stacked_p.reshape(-1,  order="F")
+    h     = stacked_h.reshape(-1,   order="F")
     if gap_samples > 0:
-        pressure_raw      = pressure_raw[:-gap_samples]
-        pressure_gauge_pa = pressure_gauge_pa[:-gap_samples]
-        depth_m           = depth_m[:-gap_samples]
+        p_raw = p_raw[:-gap_samples]
+        p     = p[:-gap_samples]
+        h     = h[:-gap_samples]
 
-    # --- build the time index robustly (per-burst, respecting gaps) ---
-    burst_starts = _normalize_burst_starts(tclip, nsamp, nburst)  # length nburst, MATLAB datenums
-    # Time within a burst as MATLAB datenum increments
-    within_burst = (np.arange(nsamp, dtype=float) / SECONDS_PER_DAY)
-
-    # Preallocate stitched MATLAB datenums with NaN gaps to mirror data stitching
+    # Build synthetic per-sample MATLAB datenums within each burst
+    within = (np.arange(nsamp, dtype=float) / float(sample_rate_hz)) / SECONDS_PER_DAY
     tstack = np.full((block_len, nburst), np.nan, dtype=float)
     for j in range(nburst):
-        tstart = float(burst_starts[j])
-        tstack[:nsamp, j] = tstart + within_burst
+        tstack[:nsamp, j] = burst_starts[j] + within
 
-    # Flatten time the same way; drop trailing gap
-    matlab_time_series = tstack.reshape(-1, order="F")
+    matlab_time = tstack.reshape(-1, order="F")
     if gap_samples > 0:
-        matlab_time_series = matlab_time_series[:-gap_samples]
+        matlab_time = matlab_time[:-gap_samples]
 
-    # Convert MATLAB datenums -> datetime64[ns]
-    dt = matlab_datenum_to_datetime64(matlab_time_series)
+    dt = matlab_datenum_to_datetime64(matlab_time)
 
-    # --- assemble tidy DataFrame ---
-    df = pd.DataFrame(
-        {
-            "p_raw": pressure_raw,            # in 'units'
-            "p": pressure_gauge_pa,  # Pa
-            "h": depth_m,                            # m
-        },
-        index=pd.to_datetime(dt)
-    )
-
-    # --- attach metadata for provenance ---
-    df.attrs["sample_rate_hz"] = float(sample_rate_hz)
-    df.attrs["rho"] = float(rho)
-    df.attrs["gravity"] = float(gravity)
-    df.attrs["units"] = u
-    df.attrs["is_gauge"] = bool(is_gauge)
-    if u == "psi":
-        df.attrs["patm_used_psi"] = 0.0 if is_gauge else float(patm_psi)
-    elif u == "dbar":
-        df.attrs["patm_used_dbar"] = 0.0 if is_gauge else float(patm_dbar)
-    else:
-        df.attrs["patm_used_pa"] = 0.0 if is_gauge else float(patm_pa)
-
+    df = pd.DataFrame({"p_raw": p_raw, "p": p, "h": h},
+                      index=pd.to_datetime(dt))
     return df
